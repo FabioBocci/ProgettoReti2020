@@ -50,6 +50,71 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         return false;
     }
 
+    @Override
+    public boolean Logout(String User) throws IllegalArgumentException, UserDontFoundException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean CreateProject(String PJTname, String User)
+            throws IllegalArgumentException, UserDontFoundException, ProjectNameAlreadyUsed {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean EndProject(String PJTname, String User)
+            throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public List<String> ListProject() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean addMembers(String PJTname, String newUser)
+            throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public List<String> ShowMembers(String PJTname) throws ProjectDontFoundException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<List<Card>> ShowCards(String PJTname) throws ProjectDontFoundException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Card ShowCard(String PJTname, String CARDname) throws ProjectDontFoundException, CardDontFoundException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean MoveCard(String PJTname, String CARDname, String lstOLD, String lstNEW)
+            throws ProjectDontFoundException, CardDontFoundException, IllegalMoveException {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public List<String> GetCardHistory(String PJTname, String CARDname)
+            throws ProjectDontFoundException, CardDontFoundException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
 
 
     
