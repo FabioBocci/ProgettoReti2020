@@ -19,10 +19,10 @@ public class Card {
 
     public Card() {}
 
-    public String GetName() {return this.name;}
-    public String GetDesc() {return this.description;}
-    public String GetCList() {return this.CurrentState.name();}
-    public ArrayList<String> GetCardHistory() 
+    public String getName() {return this.name;}
+    public String getState() {return this.CurrentState.name();}
+    public String getDescription() { return description;}
+    public ArrayList<String> getCardHistory() 
     {
         ArrayList<String> lst = new ArrayList<>();
         for (cardStatus cardStatus : cardHistory) {
@@ -32,11 +32,9 @@ public class Card {
     }
 
     public void setCardHistory(ArrayList<cardStatus> cardHistory) { this.cardHistory = cardHistory; }
-    public void setCurrentState(String CurrentState) { this.CurrentState = cardStatus.valueOf(CurrentState.toUpperCase());}
+    public void setState(String CurrentState) { this.CurrentState = cardStatus.valueOf(CurrentState.toUpperCase());}
     public void setName(String name) {this.name = name; }
     public void setDescription(String description) { this.description = description; }
-    public String getDescription() { return description;}
-
 
     @JsonIgnore
     public ArrayList<String> getInfo()
