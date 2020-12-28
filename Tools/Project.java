@@ -102,6 +102,7 @@ public class Project {
         }
     }
 
+    public String getName(){return this.ID_NAME;}
     private void setUsers(File f) throws FileNotFoundException {
         Scanner sc = new Scanner(f);
         while (sc.hasNextLine()) {
@@ -170,7 +171,7 @@ public class Project {
         Cards_TODO.add(Name);
     }
     //Muove gli stati di una Card
-    public void MoveCard(String Name, String OldState, String NewState)
+    public void MoveCard(String Name, String OldState, String NewState)throws IllegalArgumentException, IllegalMoveException
     {
         Card s = null;
         for(Card c : Cards)
