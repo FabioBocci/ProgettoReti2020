@@ -1,6 +1,6 @@
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
-
+import Tools.*;
 public class ClientMain extends RemoteObject implements NotifyEventInterface, ClientInterface {
     private static final long serialVersionUID = 1L;
 

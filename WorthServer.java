@@ -1,6 +1,6 @@
 import java.util.List;
 import Exceptions.*;
-
+import Tools.*;
 public interface WorthServer{
 
     public boolean Login(String Username, String Password)throws IllegalArgumentException,UserDontFoundException;
@@ -16,7 +16,7 @@ public interface WorthServer{
     public Card ShowCard(String PJTname,String CARDname)throws ProjectDontFoundException,CardDontFoundException;
     public boolean MoveCard(String PJTname, String CARDname, String lstOLD, String lstNEW)throws ProjectDontFoundException,CardDontFoundException,IllegalMoveException;
     public List<String> GetCardHistory(String PJTname, String CARDname)throws ProjectDontFoundException,CardDontFoundException;
-    
+
 }
 
 

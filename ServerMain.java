@@ -1,24 +1,50 @@
 import Exceptions.*;
+import Tools.*;
+import java.io.File;
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
 import java.util.*;
 
-public class ServerMain extends RemoteObject implements WorthServer, WorthServerRMI{
+public class ServerMain extends RemoteObject implements WorthServer, WorthServerRMI {
 
     private static final long serialVersionUID = 1L;
     Map<String, String> UserPass;
-    Map<String , String>  UserState;
+    Map<String, String> UserState;
     List<Project> Progetti;
 
+    private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
+    private String path = "/Projects/";
 
-    public ServerMain()
-    {
-        //Da modificare con la lettura da un file
-        UserPass=new HashMap<>();
+    public ServerMain() throws IOException {
+        // Da modificare con la lettura da un file
+        UserPass = new HashMap<>();
         UserState = new HashMap<>();
+        checkDBUsers();
 
-        //Da modificare con lettura da file e cartella.
+
         Progetti = new ArrayList<>();
+        checkDBProject();
+    }
+
+    // Funzione che controlla e carica i Projetti gia presententi
+    private void checkDBProject() throws IOException
+    {
+        File f = new File(path);
+        if(!f.isDirectory()) throw new IllegalArgumentException("Path not directory");
+        File fs[]=f.listFiles();
+
+        for (File file : fs) {
+            if(file.isDirectory())
+            {
+                Progetti.add(new Project(ABS_PATH, file.getName()));
+            }
+        }
+    }
+
+    private void checkDBUsers()
+    {
+        
     }
 
     @Override

@@ -1,6 +1,6 @@
+package Tools;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-
 public interface NotifyEventInterface extends Remote {
 
     //notifica per cambio di stato di un utente.

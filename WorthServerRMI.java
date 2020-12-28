@@ -1,5 +1,6 @@
 import java.rmi.*;
 import Exceptions.*;
+import Tools.*;
 public interface WorthServerRMI extends Remote {
     /**
      * @param Username != Passw AND non presente nel programma
