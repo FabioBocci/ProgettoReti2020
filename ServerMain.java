@@ -89,7 +89,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             i++;
         }
         tmp[i]= new UsersPass(Username, Passw);
-
+        
+        UsersPassList=tmp;
         UserState.put(Username, "OFFLINE");
         return true;
     }
@@ -273,10 +274,12 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         ServerMain sm = new ServerMain();
         
         sm.Register("Fabio", "01234567");
-        sm.SaveAll();
+        sm.Register("Mario", "01234567");
+        sm.addMembers("02-Prova2", "Mario");
         System.out.println(sm.ListProject());
-        //System.out.println(sm.UsersPassList[0]);
-        //System.out.println(sm.UsersPassList[0].getUser()+" | "+sm.UsersPassList[0].getPassword());
+        System.out.println(sm.UsersPassList[0]);
+        System.out.println(sm.UsersPassList[0].getUser()+" | "+sm.UsersPassList[0].getPassword());
+        sm.SaveAll();
     }
     
 }
