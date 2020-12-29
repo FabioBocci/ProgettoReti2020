@@ -2,6 +2,12 @@ import Exceptions.*;
 import Tools.*;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
 import java.util.*;
@@ -13,6 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class ServerMain extends RemoteObject implements WorthServer, WorthServerRMI {
 
     private static final long serialVersionUID = 1L;
+    private static final int DIM_BUFFER=4096;
+    private static final int porta=1999;
+    private static final String EXIT_CMD="exit";
     Map<String, String> UserState;
     List<Project> Progetti;
     ArrayList<UsersPass> UPlist;
@@ -88,7 +97,6 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         UserState.put(Username, "OFFLINE");
         return true;
     }
-
 
     @Override
     public synchronized void registerForCallBacks(NotifyEventInterface ClientInterface) throws RemoteException {
@@ -263,12 +271,86 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         return lst;
     }
 
-    public void Strart()
+    public void start() throws IOException
     {
+        String Ris="";
+        String Command="";
+        ByteBuffer input;
+        ByteBuffer out;
+        
+        //Creo il server e faccio il Bind sulla port 1999
+        ServerSocketChannel server = ServerSocketChannel.open();
+        server.socket().bind(new InetSocketAddress(porta));
+        server.configureBlocking(false);
+
+        //creo il selector e lo collego al server
+        Selector selector = Selector.open();
+        server.register(selector, SelectionKey.OP_ACCEPT);
+    
+
+        System.out.println("Server online");
+
         while(true)
         {
-            
+            if(selector.select()==0)continue;
+
+
+            Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
+            while(keys.hasNext())
+            {
+                SelectionKey key = keys.next();
+                keys.remove();
+
+                if(key.isAcceptable())
+                {
+                    ServerSocketChannel ss = (ServerSocketChannel) key.channel();
+                    SocketChannel client = ss.accept();
+                    System.out.println("Connessione Accettata da :"+client);
+                    client.configureBlocking(false);
+                    SelectionKey key2 = client.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                    out = ByteBuffer.allocate(DIM_BUFFER);
+                    out.clear();
+                    key2.attach(out);
+                }
+                if(key.isReadable())
+                {
+                    ServerSocketChannel ss = (ServerSocketChannel) key.channel();
+                    SocketChannel client = ss.accept();
+                    input = (ByteBuffer) key.attachment();
+
+                    if(input.hasRemaining())
+                    {
+                        input.compact();
+                        input.mark();
+                        client.read(input);
+                        input.reset();
+                    }
+                    else{
+
+                        input.clear();
+                        client.read(input);
+                    }
+                    Command = new String(input.array()).trim();
+                    Ris=execute(Command);
+                }
+                if(key.isWritable())
+                {
+                    SocketChannel client = (SocketChannel) key.channel();
+                    out = ByteBuffer.wrap(Ris.getBytes());
+                    out.flip();
+                    client.write(out);
+                    
+                }
+                key.cancel();
+                if(Ris.equals(EXIT_CMD)) break;
+            }
         }
+    }
+
+    private String execute(String cmd)
+    {
+
+        return "OK";
     }
 
     public static void main(String[] args) throws IOException {
