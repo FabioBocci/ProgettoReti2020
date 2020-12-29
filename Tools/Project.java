@@ -119,11 +119,9 @@ public class Project {
             System.out.println(f.toString());
             try {
                 OM.writeValue(f, c);
-            } catch (JsonGenerationException e) {
-                // TODO Auto-generated catch block
+            } catch (JsonGenerationException e) { 
                 e.printStackTrace();
             } catch (JsonMappingException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
             
@@ -139,7 +137,6 @@ public class Project {
                 outputStream.write(temp.getBytes());
             }
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         
