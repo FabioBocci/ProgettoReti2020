@@ -15,7 +15,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     private static final long serialVersionUID = 1L;
     Map<String, String> UserState;
     List<Project> Progetti;
-    UsersPass[] UsersPassList = {};
+    ArrayList<UsersPass> UPlist;
 
     private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
     private String path = "/Projects/";
@@ -23,13 +23,13 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
     public ServerMain() throws IOException {
         super();
-
+        UPlist= new ArrayList<>();
         UserState = new HashMap<>();
         checkDBUsers();
 
-        if(UsersPassList.length!= 0 )
+        if(UPlist.size() != 0 )
         {
-            for(UsersPass up : UsersPassList)
+            for(UsersPass up : UPlist)
             {
                 UserState.put(up.getUser(), "OFFLINE");
             }
@@ -59,14 +59,16 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         File users = new File(path+"UsersPass.json");
         if(!users.exists()) return;
         ObjectMapper om = new ObjectMapper();
+        UsersPass[] UsersPassList = {};
         UsersPassList= om.readValue(users, UsersPass[].class);
+        UPlist.addAll(Arrays.asList(UsersPassList));
     }
 
-    public void SaveAll() throws IOException
+    public synchronized void SaveAll() throws IOException
     {
         ObjectMapper om = new ObjectMapper();
         File users = new File(ABS_PATH+"UsersPass.json");
-        om.writeValue(users, UsersPassList);
+        om.writeValue(users, UPlist);
 
         for(Project p : Progetti)
         {
@@ -77,27 +79,19 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public boolean Register(String Username, String Passw)throws RemoteException, IllegalArgumentException, NUserException {
+    public synchronized boolean Register(String Username, String Passw)throws RemoteException, IllegalArgumentException, NUserException {
         if(Username == Passw || Passw.length() < 6) throw new IllegalArgumentException();
         if(UserState.get(Username) != null) throw new NUserException(Username);
 
-        UsersPass[] tmp = new UsersPass[UsersPassList.length+1];
-        int i=0;
-        for(UsersPass up : UsersPassList)
-        {
-            tmp[i]=up;
-            i++;
-        }
-        tmp[i]= new UsersPass(Username, Passw);
+        UPlist.add(new UsersPass(Username, Passw));
         
-        UsersPassList=tmp;
         UserState.put(Username, "OFFLINE");
         return true;
     }
 
 
     @Override
-    public void registerForCallBacks(NotifyEventInterface ClientInterface) throws RemoteException {
+    public synchronized void registerForCallBacks(NotifyEventInterface ClientInterface) throws RemoteException {
          if (!clients.contains(ClientInterface)) {
             clients.add(ClientInterface);
             System.out.println("New client registered.");
@@ -106,7 +100,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public void unregisterForCallback(NotifyEventInterface ClientInterface) throws RemoteException {
+    public synchronized void unregisterForCallback(NotifyEventInterface ClientInterface) throws RemoteException {
         if (clients.remove(ClientInterface)) {
             System.out.println("Client unregistered");
         } else {
@@ -115,15 +109,15 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public boolean Login(String Username, String Password) throws IllegalArgumentException, UserDontFoundException, RemoteException {
+    public synchronized boolean Login(String Username, String Password) throws IllegalArgumentException, UserDontFoundException, RemoteException {
         if(!UserState.keySet().contains(Username))throw new UserDontFoundException(Username);
         if(Username == Password || Password.length() < 6) throw new IllegalArgumentException();
 
         boolean found = false;
         int i=0;
-        while(!found && i<UsersPassList.length)
+        while(!found && i<UPlist.size())
         {
-            if(UsersPassList[i].getUser().equals(Username) && UsersPassList[i].getPassword().equals(Password))
+            if(UPlist.get(i).getUser().equals(Username) && UPlist.get(i).getPassword().equals(Password))
             {
                 found=true;
             }
@@ -139,7 +133,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public boolean Logout(String Username) throws IllegalArgumentException, UserDontFoundException, RemoteException {
+    public synchronized boolean Logout(String Username) throws IllegalArgumentException, UserDontFoundException, RemoteException {
         if(!UserState.keySet().contains(Username))throw new UserDontFoundException(Username);
         if(UserState.get(Username).equals("OFFLINE"))throw new IllegalArgumentException("Utente selezionato gia OFFLINE");
 
@@ -153,7 +147,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public boolean CreateProject(String PJTname, String User)throws IllegalArgumentException, UserDontFoundException, ProjectNameAlreadyUsed,IOException {
+    public synchronized boolean CreateProject(String PJTname, String User)throws IllegalArgumentException, UserDontFoundException, ProjectNameAlreadyUsed,IOException {
         if(!UserState.keySet().contains(User))throw new UserDontFoundException(User);
         for (Project pj : Progetti) {
             if(pj.getName().equals(PJTname))throw new ProjectNameAlreadyUsed(PJTname);
@@ -165,13 +159,13 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public boolean EndProject(String PJTname, String User) throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
+    public synchronized boolean EndProject(String PJTname, String User) throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
         // TODO Auto-generated method stub
         return false;
     }
 
     @Override
-    public List<String> ListProject() {
+    public synchronized List<String> ListProject() {
         ArrayList<String> str= new ArrayList<String>();
         for (Project pj : Progetti) {
             str.add(pj.getName());
@@ -180,7 +174,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public boolean addMembers(String PJTname, String newUser)throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
+    public synchronized boolean addMembers(String PJTname, String newUser)throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
         if(!UserState.keySet().contains(newUser))throw new UserDontFoundException(newUser);
         Project pjt=null;
         for (Project pj : Progetti) {
@@ -197,7 +191,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public List<String> ShowMembers(String PJTname) throws ProjectDontFoundException 
+    public synchronized List<String> ShowMembers(String PJTname) throws ProjectDontFoundException 
     {
         Project pjt=null;
         for (Project pj : Progetti) {
@@ -212,7 +206,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public List<String> ShowCards(String PJTname) throws ProjectDontFoundException {
+    public synchronized List<String> ShowCards(String PJTname) throws ProjectDontFoundException {
         Project pjt=null;
         for (Project pj : Progetti) {
             if(pj.getName().equals(PJTname))
@@ -226,7 +220,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public List<String> ShowCard(String PJTname, String CARDname) throws ProjectDontFoundException, CardDontFoundException {
+    public synchronized List<String> ShowCard(String PJTname, String CARDname) throws ProjectDontFoundException, CardDontFoundException {
         Project pjt=null;
         for (Project pj : Progetti) {
             if(pj.getName().equals(PJTname))
@@ -241,7 +235,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public boolean MoveCard(String PJTname, String CARDname, String lstOLD, String lstNEW) throws ProjectDontFoundException, CardDontFoundException, IllegalMoveException {
+    public synchronized boolean MoveCard(String PJTname, String CARDname, String lstOLD, String lstNEW) throws ProjectDontFoundException, CardDontFoundException, IllegalMoveException {
         Project pjt=null;
         for (Project pj : Progetti) {
             if(pj.getName().equals(PJTname))
@@ -255,7 +249,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public List<String> GetCardHistory(String PJTname, String CARDname)throws ProjectDontFoundException, CardDontFoundException {
+    public synchronized List<String> GetCardHistory(String PJTname, String CARDname)throws ProjectDontFoundException, CardDontFoundException {
         Project pjt=null;
         for (Project pj : Progetti) {
             if(pj.getName().equals(PJTname))
@@ -269,6 +263,13 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         return lst;
     }
 
+    public void Strart()
+    {
+        while(true)
+        {
+            
+        }
+    }
 
     public static void main(String[] args) throws IOException {
         ServerMain sm = new ServerMain();
@@ -277,8 +278,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         sm.Register("Mario", "01234567");
         sm.addMembers("02-Prova2", "Mario");
         System.out.println(sm.ListProject());
-        System.out.println(sm.UsersPassList[0]);
-        System.out.println(sm.UsersPassList[0].getUser()+" | "+sm.UsersPassList[0].getPassword());
+
         sm.SaveAll();
     }
     
