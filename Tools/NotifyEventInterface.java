@@ -8,6 +8,7 @@ public interface NotifyEventInterface extends Remote {
 
     //TODO Chat ecc...
     //notifica per nuovi messaggi aggiunti
-    public void notifyEventChat(String User,String msg) throws RemoteException;
+    public void notifyEventChat(String IP,int PORT) throws RemoteException;
+    public void notifyEventProjectCancel(String address, int port) throws RemoteException;
 
 }

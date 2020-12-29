@@ -11,7 +11,13 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
     }
 
     @Override
-    public synchronized void notifyEventChat(String User, String msg) throws RemoteException {
+    public void notifyEventChat(String IP, int PORT) throws RemoteException {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void notifyEventProjectCancel(String address, int port) throws RemoteException {
         // TODO Auto-generated method stub
 
     }
