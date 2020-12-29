@@ -294,7 +294,6 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         {
             if(selector.select()==0)continue;
 
-
             Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
             while(keys.hasNext())
             {
@@ -314,8 +313,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                 }
                 if(key.isReadable())
                 {
-                    ServerSocketChannel ss = (ServerSocketChannel) key.channel();
-                    SocketChannel client = ss.accept();
+                    SocketChannel client = (SocketChannel) key.channel();
                     input = (ByteBuffer) key.attachment();
 
                     if(input.hasRemaining())
@@ -326,12 +324,18 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                         input.reset();
                     }
                     else{
-
                         input.clear();
                         client.read(input);
                     }
                     Command = new String(input.array()).trim();
-                    Ris=execute(Command);
+                    System.out.println("Letto da: "+client+" | Comdando "+Command);
+                    try{
+                        Ris=execute(Command);           //Eseguo il comando ricevuto dal Client e preparo la risposta
+                    }
+                    catch(Exception e)
+                    {
+                        Ris="ERRORE "+e.toString();
+                    }
                 }
                 if(key.isWritable())
                 {
@@ -339,7 +343,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                     out = ByteBuffer.wrap(Ris.getBytes());
                     out.flip();
                     client.write(out);
-                    
+                    System.out.println("Mando a: "+client+" | Risposta "+Ris);
                 }
                 key.cancel();
                 if(Ris.equals(EXIT_CMD)) break;
@@ -347,10 +351,70 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
     }
 
-    private String execute(String cmd)
+    private String execute(String cmd) throws IllegalArgumentException, UserDontFoundException, ProjectNameAlreadyUsed,IOException
     {
+        String[] stripped=cmd.split(" ");
+        stripped[0]=stripped[0].toLowerCase();
+        String ris="";
+        
 
-        return "OK";
+        switch(stripped[0])
+        {
+            case "login":
+                if(Login(stripped[1], stripped[2]))
+                    ris="Login effettuato correttamente. "+stripped[1];
+                else
+                    ris="Login Errato";
+                break;
+            case "logout":
+                if(Logout(stripped[1]))
+                    ris="Logout effettuato correttamente. "+stripped[1];
+                else
+                    ris="Logout Errato";
+                break;
+            case "createproject":
+                if(CreateProject(stripped[1], stripped[2]))
+                    ris="Progetto creato. "+stripped[1];
+                else
+                    ris="...";
+                break;
+            case "endproject":
+                if(EndProject(stripped[1], stripped[2]))
+                    ris="Progetto terminato. "+stripped[1];
+                else
+                    ris="---";
+                break;
+            case "listproject":
+                ris=ListProject().toString();
+                break;
+            case "addmember":
+                if(addMembers(stripped[1], stripped[2]))
+                    ris="User "+stripped[2]+" Aggiunto su "+stripped[1];
+                else
+                    ris="---";
+                break;
+            case "showmember":
+                ris=ShowMembers(stripped[1]).toString();
+                break;
+            case "showcards":
+                ris=ShowCards(stripped[1]).toString();
+                break;
+            case "showcard":
+                ris=ShowCard(stripped[1], stripped[2]).toString();
+                break;
+            case "getcardhistory":
+                ris=GetCardHistory(stripped[1],stripped[2]).toString();
+                break;
+            case "movecard":
+                if(MoveCard(stripped[1], stripped[2], stripped[3], stripped[4]))
+                    ris="Movimento effettuato "+stripped[2]+" da "+stripped[3]+" a "+stripped[4];
+                else
+                    ris="---";
+                break;
+            default:
+                ris="COMANDO NON RICONOSCIUTO";
+        }
+        return ris;
     }
 
     public static void main(String[] args) throws IOException {
