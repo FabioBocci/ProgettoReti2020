@@ -27,10 +27,9 @@ public class User {
     @JsonIgnore
     public void setOnline(boolean bool){this.online=bool;}
     @JsonIgnore
-    public void setNEI(NotifyEventInterface n){
-        if(this.online)this.nei=n;}
+    public void setNEI(NotifyEventInterface n){this.nei=n;}
     @JsonIgnore
-    public NotifyEventInterface getNEI(){if(this.online)return this.nei; return null;}
+    public NotifyEventInterface getNEI(){return this.nei;}
     @JsonIgnore
     public boolean isOnline(){return this.online;}
     
