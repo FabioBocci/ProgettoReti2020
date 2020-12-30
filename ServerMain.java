@@ -30,7 +30,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     ArrayList<User> UPlist;
 
     private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
-    private String path = "/Projects/";
+    private String path = "./Projects/";
     private List<NotifyEventInterface> clients;
 
     public ServerMain() throws IOException {
@@ -57,7 +57,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     private void checkDBUsers() throws JsonParseException, JsonMappingException, IOException {
-        File f = new File(ABS_PATH);
+        File f = new File(path);
         if (!f.isDirectory())
             throw new IllegalArgumentException("Path not directory");
         File users = new File(path + "User.json");
@@ -66,8 +66,10 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         ObjectMapper om = new ObjectMapper();
         User[] UserList = {};
         UserList = om.readValue(users, User[].class);
-        UPlist.addAll(Arrays.asList(UserList));
 
+        
+        UPlist.addAll(Arrays.asList(UserList));
+        
         //dopo aver letto gli utenti nel DB le metto tutti OFFLINE
         for (User user : UserList) {
             user.setOnline(false);
@@ -96,6 +98,15 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             if(user.getUser().equals(Username)) throw new NUserException(Username);
         }
         
+        NotifyEventInterface nei = null;
+        for (User user : UPlist) {
+            nei = user.getNEI();
+            if(nei != null)
+            {
+                user.getNEI().notifyEventUser(Username, "OFFLINE");
+            }
+            nei=null;
+        }
         UPlist.add(new User(Username, Passw));      //il costruttore di User lo inizializza gia a offline
         return true;
     }
@@ -141,8 +152,9 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             return false;
         usa.setOnline(true);
 
-        for (NotifyEventInterface nei : clients) {
-            nei.notifyEventUser(Username, "ONLINE");
+        for (User user : UPlist) {
+            if(usa!= user)
+                user.getNEI().notifyEventUser(Username, "ONLINE");
         }
         return true;
     }
@@ -183,9 +195,15 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public synchronized boolean EndProject(String PJTname, String User)
-            throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
-        // TODO Auto-generated method stub
+    public synchronized boolean EndProject(String PJTname, String User) throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
+        Project pkt=null;
+        for (Project project : Progetti) {
+            if(project.getName().equals(PJTname))pkt=project;
+        }
+        if(pkt==null)throw new ProjectDontFoundException(PJTname);
+        if(!pkt.IsMember(User))throw new UserDontFoundException(User);
+        pkt.delete();
+
         return false;
     }
 
