@@ -14,6 +14,6 @@ public interface WorthServerRMI extends Remote {
     public boolean Register(String Username, String Passw)throws RemoteException,IllegalArgumentException,NUserException;
 
 
-    public void registerForCallBacks(NotifyEventInterface ClientInterface) throws RemoteException;
-    public void unregisterForCallback(NotifyEventInterface ClientInterface) throws RemoteException;
+    public void registerForCallBacks(NotifyEventInterface ClientInterface,String User) throws RemoteException;
+    public void unregisterForCallback(NotifyEventInterface ClientInterface,String User) throws RemoteException;
 }
