@@ -28,12 +28,13 @@ public class Project {
 
     private String IP_Multicast;
     private int PORT = 1998;
-
+    private boolean DELETED;
     private String ABS_path;
 
     private ObjectMapper OM;
 
     public Project(String ABS_PATH, String NomeProgetto) throws IOException {
+        DELETED=false;
         this.ID_NAME = NomeProgetto;
         this.Cards = new ArrayList<>();
         
@@ -78,7 +79,7 @@ public class Project {
             if (fn.getName().contains("Users.txt"))
                 setUsers(fn);
             else {
-                if (fn.toString().contains(".json")) // controllo inutile, per essere sicuri che si prendano solo file  // JSON
+                if (fn.toString().contains(".json"))
                     {
                         c= OM.readValue(fn, Card.class);
                         Cards.add(c);
@@ -113,35 +114,38 @@ public class Project {
 
     public void SaveAll() throws IOException 
     {
-        Path path = Paths.get(ABS_path + "/" + ID_NAME + "/");
-        for (Card c : Cards) {
-            File f = new File(path.toString()+ "/" + c.getName() + ".json");
-            System.out.println(f.toString());
+        if(!DELETED)    //controllo che il progetto non sia eliminato
+        {
+            Path path = Paths.get(ABS_path + "/" + ID_NAME + "/");
+            for (Card c : Cards) {
+                File f = new File(path.toString()+ "/" + c.getName() + ".json");
+                System.out.println(f.toString());
+                try {
+                    OM.writeValue(f, c);
+                } catch (JsonGenerationException e) { 
+                    e.printStackTrace();
+                } catch (JsonMappingException e) {
+                    e.printStackTrace();
+                }
+                
+            }
+    
+            // Salvataggiu degli Membri in un File txt
             try {
-                OM.writeValue(f, c);
-            } catch (JsonGenerationException e) { 
-                e.printStackTrace();
-            } catch (JsonMappingException e) {
+                FileOutputStream outputStream = new FileOutputStream(new File(path.toString()+ "/" + "Users.txt"));
+    
+                for(String str : Membri)
+                {
+                    String temp=str+"\n";
+                    outputStream.write(temp.getBytes());
+                }
+            } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
             
+    
+            System.out.println("Tutti i file Salvati");
         }
-
-        // Salvataggiu degli Membri in un File txt
-        try {
-            FileOutputStream outputStream = new FileOutputStream(new File(path.toString()+ "/" + "Users.txt"));
-
-            for(String str : Membri)
-            {
-                String temp=str+"\n";
-                outputStream.write(temp.getBytes());
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        
-
-        System.out.println("Tutti i file Salvati");
     }
 
     
@@ -149,27 +153,34 @@ public class Project {
     //Aggiunge un Nuovo membro al progetto. se gia presente lancia una eccezione
     public void AddMember(String User)
     {
-        if(this.Membri.contains(User))throw new IllegalArgumentException();         //da modificare con una eccezione IllegalUserException
-        Membri.add(User);
+        if(!DELETED)
+        {
+            if(this.Membri.contains(User))throw new IllegalArgumentException();         //da modificare con una eccezione IllegalUserException
+            Membri.add(User);
+        }
     }
     
     //return true se il membro è gia presente false altrimenti
-    public boolean IsMember(String User){return Membri.contains(User);}
+    public boolean IsMember(String User){if(!DELETED)return Membri.contains(User); return false;}
 
     //Crea una nuova Card e la inserisce, se il nome non è gia usato da un'altra Card
     public void AddCard(String Name, String Desc)
     {
-        for(Card c : Cards)
+        if(!DELETED)
         {
-            if(c.getName()==Name)throw new IllegalArgumentException();
+            for(Card c : Cards)
+            {
+                if(c.getName()==Name)throw new IllegalArgumentException();
+            }
+            Card s = new Card(Name, Desc);
+            Cards.add(s);
+            Cards_TODO.add(Name);
         }
-        Card s = new Card(Name, Desc);
-        Cards.add(s);
-        Cards_TODO.add(Name);
     }
     //Muove gli stati di una Card
     public void MoveCard(String Name, String OldState, String NewState)throws IllegalArgumentException, IllegalMoveException
     {
+        if(DELETED) return;
         Card s = null;
         for(Card c : Cards)
         {
@@ -231,6 +242,7 @@ public class Project {
     //restituisce una lista con i nomi di tutte le Card
     public List<String> GetCards()
     {
+        if(DELETED)return null;
         List<String> lst = new ArrayList<>();
         lst.addAll(Cards_TODO);
         lst.addAll(Cards_InProgess);
@@ -239,10 +251,11 @@ public class Project {
         return lst;
     }
 
-    public boolean IsDone(){return Cards_Done.size()==Cards.size();}
+    public boolean IsDone(){if(DELETED) return true;return Cards_Done.size()==Cards.size();}
 
     public List<String> getCardHistory(String name)
     {
+        if(DELETED)return null;
         Card c=null;
         for(Card s : Cards)
         {
@@ -254,6 +267,7 @@ public class Project {
 
     public List<String> GetCardInfo(String name)
     {
+        if(DELETED)return null;
         Card c=null;
         for(Card s : Cards)
         {
@@ -262,24 +276,39 @@ public class Project {
         if(c==null)return null;
         return c.getInfo();
     }
-    public List<String> GetMember(){return new ArrayList(this.Membri);}
+    public List<String> GetMember(){if(DELETED)return null; return new ArrayList<>(this.Membri);}
 
+    public boolean delete()
+    {
+        if(DELETED)return true;
+        Path path = Paths.get(ABS_path + "/" + ID_NAME + "/");
+        File f = path.toFile();
 
+        if(f.isDirectory())
+        {
+            for(File fn : f.listFiles())
+            {
+                fn.delete();
+            }
+        }
+        DELETED=true;
+        return f.delete();
+    }
 
     //--------------------------TEST-----------------------//
     public static void main(String[] args) throws IOException {
-        Project pj = new Project("C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects", "02-Prova2");
-        //pj.AddCard("ROBA", "prova di una lunga descirizone");
+        Project pj = new Project("C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects", "03-Prova2");
+        pj.AddCard("ROBA", "prova di una lunga descirizone");
         System.out.println(pj.GetCards());
         //pj.MoveCard("ROBA2", "TODO", "INPROGRESS");
         //System.out.println(pj.Cards.get(0).getInfo());
-        System.out.println(pj.GetCardInfo("ROBA2"));
-        System.out.println(pj.getCardHistory("ROBA2"));
+        System.out.println(pj.GetCardInfo("ROBA"));
+        System.out.println(pj.getCardHistory("ROBA"));
 
         System.out.println(pj.GetMember());
         //pj.AddMember("Fabio");
         //pj.AddMember("Luca");
-
+        pj.delete();
         pj.SaveAll();
     }
 }
