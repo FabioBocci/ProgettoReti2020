@@ -26,9 +26,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     private static final int DIM_BUFFER = 4096;
     private static final int porta = 1999;
     private static final String EXIT_CMD = "exit";
-    Map<String, String> UserState;
     List<Project> Progetti;
-    ArrayList<UsersPass> UPlist;
+    ArrayList<User> UPlist;
 
     private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
     private String path = "/Projects/";
@@ -37,14 +36,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     public ServerMain() throws IOException {
         super();
         UPlist = new ArrayList<>();
-        UserState = new HashMap<>();
         checkDBUsers();
 
-        if (UPlist.size() != 0) {
-            for (UsersPass up : UPlist) {
-                UserState.put(up.getUser(), "OFFLINE");
-            }
-        }
         Progetti = new ArrayList<>();
         checkDBProject();
     }
@@ -67,18 +60,23 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         File f = new File(ABS_PATH);
         if (!f.isDirectory())
             throw new IllegalArgumentException("Path not directory");
-        File users = new File(path + "UsersPass.json");
+        File users = new File(path + "User.json");
         if (!users.exists())
             return;
         ObjectMapper om = new ObjectMapper();
-        UsersPass[] UsersPassList = {};
-        UsersPassList = om.readValue(users, UsersPass[].class);
-        UPlist.addAll(Arrays.asList(UsersPassList));
+        User[] UserList = {};
+        UserList = om.readValue(users, User[].class);
+        UPlist.addAll(Arrays.asList(UserList));
+
+        //dopo aver letto gli utenti nel DB le metto tutti OFFLINE
+        for (User user : UserList) {
+            user.setOnline(false);
+        }
     }
 
     public synchronized void SaveAll() throws IOException {
         ObjectMapper om = new ObjectMapper();
-        File users = new File(ABS_PATH + "UsersPass.json");
+        File users = new File(ABS_PATH + "User.json");
         om.writeValue(users, UPlist);
 
         for (Project p : Progetti) {
@@ -93,50 +91,55 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             throws RemoteException, IllegalArgumentException, NUserException {
         if (Username == Passw || Passw.length() < 6)
             throw new IllegalArgumentException();
-        if (UserState.get(Username) != null)
-            throw new NUserException(Username);
-
-        UPlist.add(new UsersPass(Username, Passw));
-
-        UserState.put(Username, "OFFLINE");
+        for (User user : UPlist) 
+        {
+            if(user.getUser().equals(Username)) throw new NUserException(Username);
+        }
+        
+        UPlist.add(new User(Username, Passw));      //il costruttore di User lo inizializza gia a offline
         return true;
     }
 
     @Override
-    public synchronized void registerForCallBacks(NotifyEventInterface ClientInterface) throws RemoteException {
-        if (!clients.contains(ClientInterface)) {
-            clients.add(ClientInterface);
-            System.out.println("New client registered.");
+    public synchronized void registerForCallBacks(NotifyEventInterface ClientInterface,String User) throws RemoteException {
+        User usa=null;
+        for (User user : UPlist) {
+            if(user.getUser().equals(User)) usa=user;
         }
-
-    }
-
-    @Override
-    public synchronized void unregisterForCallback(NotifyEventInterface ClientInterface) throws RemoteException {
-        if (clients.remove(ClientInterface)) {
-            System.out.println("Client unregistered");
-        } else {
-            System.out.println("Unable to unregister client.");
+        if(usa != null)
+        {
+            usa.setNEI(ClientInterface);
         }
     }
 
     @Override
-    public synchronized boolean Login(String Username, String Password)
-            throws IllegalArgumentException, UserDontFoundException, RemoteException {
-        if (!UserState.keySet().contains(Username))
+    public synchronized void unregisterForCallback(NotifyEventInterface ClientInterface, String User) throws RemoteException {
+        User usa=null;
+        for (User user : UPlist) {
+            if(user.getNEI() == ClientInterface) usa=user;
+        }
+        if(usa != null)
+        {
+            usa.setNEI(null);
+        }
+    }
+
+    @Override
+    public synchronized boolean Login(String Username, String Password)throws IllegalArgumentException, UserDontFoundException, RemoteException {
+        User usa=null;
+        for (User user : UPlist) {
+            if(user.getUser().equals(Username)) usa=user;
+        }
+        if(usa == null)
+        {
             throw new UserDontFoundException(Username);
+        }
         if (Username == Password || Password.length() < 6)
             throw new IllegalArgumentException();
 
-        boolean found = false;
-        int i = 0;
-        while (!found && i < UPlist.size()) {
-            if (UPlist.get(i).getUser().equals(Username) && UPlist.get(i).getPassword().equals(Password)) {
-                found = true;
-            }
-        }
-        if (!found)
+        if(!usa.getPassword().equals(Password))
             return false;
+        usa.setOnline(true);
 
         for (NotifyEventInterface nei : clients) {
             nei.notifyEventUser(Username, "ONLINE");
@@ -145,14 +148,15 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public synchronized boolean Logout(String Username)
-            throws IllegalArgumentException, UserDontFoundException, RemoteException {
-        if (!UserState.keySet().contains(Username))
-            throw new UserDontFoundException(Username);
-        if (UserState.get(Username).equals("OFFLINE"))
-            throw new IllegalArgumentException("Utente selezionato gia OFFLINE");
+    public synchronized boolean Logout(String Username)throws IllegalArgumentException, UserDontFoundException, RemoteException {
+        User usa=null;
+        for (User user : UPlist) {
+            if(user.getUser().equals(Username)) usa=user;
+        }
+        if(usa == null){throw new UserDontFoundException(Username);}
+        if (!usa.isOnline()) throw new IllegalArgumentException("Utente selezionato gia OFFLINE");
 
-        UserState.put(Username, "OFFLINE");
+        usa.setOnline(false);
 
         for (NotifyEventInterface nei : clients) {
             nei.notifyEventUser(Username, "OFFLINE");
@@ -161,17 +165,20 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public synchronized boolean CreateProject(String PJTname, String User)
-            throws IllegalArgumentException, UserDontFoundException, ProjectNameAlreadyUsed, IOException {
-        if (!UserState.keySet().contains(User))
-            throw new UserDontFoundException(User);
+    public synchronized boolean CreateProject(String PJTname, String User)throws IllegalArgumentException, UserDontFoundException, ProjectNameAlreadyUsed, IOException {
+        User usa=null;
+        for (User user : UPlist) {
+            if(user.getUser().equals(User)) usa=user;
+        }
+        if(usa == null){throw new UserDontFoundException(User);}
         for (Project pj : Progetti) {
             if (pj.getName().equals(PJTname))
                 throw new ProjectNameAlreadyUsed(PJTname);
         }
         Project prt = new Project(ABS_PATH, PJTname);
+        prt.AddMember(User);
         Progetti.add(prt);
-
+        
         return true;
     }
 
@@ -192,10 +199,12 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public synchronized boolean addMembers(String PJTname, String newUser)
-            throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
-        if (!UserState.keySet().contains(newUser))
-            throw new UserDontFoundException(newUser);
+    public synchronized boolean addMembers(String PJTname, String newUser)throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
+        User usa=null;
+        for (User user : UPlist) {
+            if(user.getUser().equals(newUser)) usa=user;
+        }
+        if(usa == null){throw new UserDontFoundException(newUser);}
         Project pjt = null;
         for (Project pj : Progetti) {
             if (pj.getName().equals(PJTname)) {
@@ -327,15 +336,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                     SocketChannel client = (SocketChannel) key.channel();
                     input = (ByteBuffer) key.attachment();
 
-                    if (input.hasRemaining()) {
-                        input.compact();
-                        input.mark();
-                        client.read(input);
-                        input.reset();
-                    } else {
-                        input.clear();
-                        client.read(input);
-                    }
+                    client.read(input);
+                    
                     Command = new String(input.array()).trim();
                     System.out.println("Letto da: " + client + " | Comdando " + Command);
                     try {
