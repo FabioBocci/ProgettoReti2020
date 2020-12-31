@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.List;
 import Exceptions.*;
-import Tools.*;
 public interface WorthServer{
 
     public boolean Login(String Username, String Password)throws IllegalArgumentException,UserDontFoundException, RemoteException;
