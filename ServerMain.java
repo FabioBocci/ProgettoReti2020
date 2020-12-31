@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class ServerMain extends RemoteObject implements WorthServer, WorthServerRMI {
 
     private static final long serialVersionUID = 1L;
-    private static final int DIM_BUFFER = 4096;
+    private static final int BUFFER_DIM = 4096;
     private static final int porta = 1999;
     private static final String EXIT_CMD = "exit";
     List<Project> Progetti;
@@ -31,7 +31,6 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
     private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
     private String path = "./Projects/";
-    private List<NotifyEventInterface> clients;
 
     public ServerMain() throws IOException {
         super();
@@ -153,7 +152,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         usa.setOnline(true);
 
         for (User user : UPlist) {
-            if(usa!= user)
+            if(usa != user && user.getNEI() != null)
                 user.getNEI().notifyEventUser(Username, "ONLINE");
         }
         return true;
@@ -170,8 +169,9 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
         usa.setOnline(false);
 
-        for (NotifyEventInterface nei : clients) {
-            nei.notifyEventUser(Username, "OFFLINE");
+        for (User user : UPlist) {
+            if(usa != user && user.getNEI() != null)
+                user.getNEI().notifyEventUser(Username, "ONLINE");
         }
         return true;
     }
@@ -204,7 +204,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         if(!pkt.IsMember(User))throw new UserDontFoundException(User);
         pkt.delete();
 
-        return false;
+        return true;
     }
 
     @Override
@@ -314,68 +314,104 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         return lst;
     }
 
-    public void start() throws IOException {
+    public void start() {
         String Ris = "";
         String Command = "";
-        ByteBuffer input;
-        ByteBuffer out;
+        ByteBuffer input=ByteBuffer.allocate(BUFFER_DIM);
+        ByteBuffer out = ByteBuffer.allocate(BUFFER_DIM);
 
         // Creo il server e faccio il Bind sulla port 1999
-        ServerSocketChannel server = ServerSocketChannel.open();
-        server.socket().bind(new InetSocketAddress(porta));
-        server.configureBlocking(false);
+        try (ServerSocketChannel server = ServerSocketChannel.open();) {
+            server.socket().bind(new InetSocketAddress(porta));
+            server.configureBlocking(false);
 
-        // creo il selector e lo collego al server
-        Selector selector = Selector.open();
-        server.register(selector, SelectionKey.OP_ACCEPT);
 
-        System.out.println("Server online");
+            // creo il selector e lo collego al server
+            Selector selector = Selector.open();
+            server.register(selector, SelectionKey.OP_ACCEPT);
+            
+            System.out.println("Server online");
 
-        while (true) {
-            if (selector.select() == 0)
-                continue;
-
-            Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
-            while (keys.hasNext()) {
-                SelectionKey key = keys.next();
-                keys.remove();
-
-                if (key.isAcceptable()) {
-                    ServerSocketChannel ss = (ServerSocketChannel) key.channel();
-                    SocketChannel client = ss.accept();
-                    System.out.println("Connessione Accettata da :" + client);
-                    client.configureBlocking(false);
-                    SelectionKey key2 = client.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                    out = ByteBuffer.allocate(DIM_BUFFER);
-                    out.clear();
-                    key2.attach(out);
-                }
-                if (key.isReadable()) {
-                    SocketChannel client = (SocketChannel) key.channel();
-                    input = (ByteBuffer) key.attachment();
-
-                    client.read(input);
-                    
-                    Command = new String(input.array()).trim();
-                    System.out.println("Letto da: " + client + " | Comdando " + Command);
+            while (true) {
+                if (selector.select() == 0)
+                    continue;
+    
+                Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
+                while (keys.hasNext()) {
+                    SelectionKey key = keys.next();
+                    keys.remove();
+    
                     try {
-                        Ris = execute(Command); // Eseguo il comando ricevuto dal Client e preparo la risposta
-                    } catch (Exception e) {
-                        Ris = "ERRORE " + e.toString();
+                        
+                        if (key.isAcceptable()) {
+                            ServerSocketChannel ss = (ServerSocketChannel) key.channel();
+                            SocketChannel client = ss.accept();
+                            System.out.println("Connessione Accettata da :" + client);
+                            client.configureBlocking(false);
+                            client.register(selector, SelectionKey.OP_READ);
+                        }
+                        if (key.isReadable()) {
+                            SocketChannel client = (SocketChannel) key.channel();
+                            client.read(input);
+                            
+                            Command = new String(input.array()).trim();
+                            input.clear();
+
+                            System.out.println("Letto da: " + client + " | Comando " + Command);
+
+                            try {
+                                Ris = execute(Command); // Eseguo il comando ricevuto dal Client e preparo la risposta
+                            } catch (Exception e) {
+                                Ris = "ERRORE " + e.toString();
+                            }
+                            Command="";
+
+                            key.interestOps(SelectionKey.OP_WRITE);
+                        }
+                        if (key.isWritable()) {
+                            SocketChannel client = (SocketChannel) key.channel();
+                            out = ByteBuffer.wrap(Ris.getBytes());
+                            
+                            client.write(out);
+
+                            key.interestOps(SelectionKey.OP_READ);
+                        }
+                    } catch (IOException e) {
+                        key.cancel();
+                        try{key.channel().close();}
+                        catch(IOException ign){}
                     }
+                    //check exit command
+                    if (Ris.equals(EXIT_CMD))
+                        break;
                 }
-                if (key.isWritable()) {
-                    SocketChannel client = (SocketChannel) key.channel();
-                    out = ByteBuffer.wrap(Ris.getBytes());
-                    out.flip();
-                    client.write(out);
-                    System.out.println("Mando a: " + client + " | Risposta " + Ris);
-                }
-                key.cancel();
-                if (Ris.equals(EXIT_CMD))
-                    break;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+ 
+    }
+    private String loginADD(String LogUser)
+    {
+        String result="";
+
+
+        //creo la lista di utenti con stato
+        for (User user : UPlist) {
+            if(user.isOnline())
+            result=result+user.getUser()+"-ONLINE ";
+            else
+            result=result+user.getUser()+"-OFFLINE ";
+        }
+
+
+        for (Project project : Progetti) {
+            if(project.GetMember().contains(LogUser))
+            {
+                result=result+"|"+project.getName();
             }
         }
+        return result;
     }
 
     private String execute(String cmd)
@@ -387,7 +423,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         switch (stripped[0]) {
             case "login":
                 if (Login(stripped[1], stripped[2]))
-                    ris = "Login effettuato correttamente. " + stripped[1];
+                    ris = "Login effettuato correttamente. " + stripped[1]+"|"+loginADD(stripped[1]);
                 else
                     ris = "Login Errato";
                 break;
@@ -439,6 +475,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             default:
                 ris = "COMANDO NON RICONOSCIUTO";
         }
+        System.out.println("RIS="+ris);
         return ris;
     }
 
@@ -463,7 +500,15 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
         r.bind("SERVER", stub);
 
+        /* Scanner sc = new Scanner(System.in);
+        while(true)
+        {
+            String cmd = sc.nextLine();
+            String res = sm.execute(cmd);
 
+            System.out.println("RES= "+res);
+
+        } */
         sm.start();
 
 
