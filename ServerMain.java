@@ -147,8 +147,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         if (Username == Password || Password.length() < 6)
             throw new IllegalArgumentException();
 
-        if(!usa.getPassword().equals(Password))
-            return false;
+        if(usa.isOnline())return false;
+        if(!usa.getPassword().equals(Password))return false;
         usa.setOnline(true);
 
         for (User user : UPlist) {
@@ -171,7 +171,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
         for (User user : UPlist) {
             if(usa != user && user.getNEI() != null)
-                user.getNEI().notifyEventUser(Username, "ONLINE");
+                user.getNEI().notifyEventUser(Username, "OFFLINE");
         }
         return true;
     }
@@ -317,8 +317,6 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     public void start() {
         String Ris = "";
         String Command = "";
-        ByteBuffer input=ByteBuffer.allocate(BUFFER_DIM);
-        ByteBuffer out = ByteBuffer.allocate(BUFFER_DIM);
 
         // Creo il server e faccio il Bind sulla port 1999
         try (ServerSocketChannel server = ServerSocketChannel.open();) {
@@ -345,17 +343,19 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                         
                         if (key.isAcceptable()) {
                             ServerSocketChannel ss = (ServerSocketChannel) key.channel();
+                            ByteBuffer atch = ByteBuffer.allocate(BUFFER_DIM);
                             SocketChannel client = ss.accept();
                             System.out.println("Connessione Accettata da :" + client);
                             client.configureBlocking(false);
-                            client.register(selector, SelectionKey.OP_READ);
+                            client.register(selector, SelectionKey.OP_READ,atch);
                         }
                         if (key.isReadable()) {
                             SocketChannel client = (SocketChannel) key.channel();
-                            client.read(input);
-                            
-                            Command = new String(input.array()).trim();
-                            input.clear();
+                            ByteBuffer read = (ByteBuffer) key.attachment();
+                            client.read(read);
+
+                            Command = new String(read.array()).trim();
+                            read.clear();
 
                             System.out.println("Letto da: " + client + " | Comando " + Command);
 
@@ -366,15 +366,17 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                             }
                             Command="";
 
-                            key.interestOps(SelectionKey.OP_WRITE);
+                            client.register(selector, SelectionKey.OP_WRITE,Ris);
                         }
                         if (key.isWritable()) {
                             SocketChannel client = (SocketChannel) key.channel();
-                            out = ByteBuffer.wrap(Ris.getBytes());
+                            String risposta =(String) key.attachment();
+                            ByteBuffer out = ByteBuffer.wrap(risposta.getBytes());
                             
                             client.write(out);
+                            out.clear();
 
-                            key.interestOps(SelectionKey.OP_READ);
+                            client.register(selector, SelectionKey.OP_READ,ByteBuffer.allocate(BUFFER_DIM));
                         }
                     } catch (IOException e) {
                         key.cancel();
@@ -408,7 +410,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         for (Project project : Progetti) {
             if(project.GetMember().contains(LogUser))
             {
-                result=result+"|"+project.getName();
+                result=result+"#"+project.getName()+"&&"+"FAKEIP";
             }
         }
         return result;
@@ -423,15 +425,15 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         switch (stripped[0]) {
             case "login":
                 if (Login(stripped[1], stripped[2]))
-                    ris = "Login effettuato correttamente. " + stripped[1]+"|"+loginADD(stripped[1]);
+                    ris = "Login effettuato correttamente. " + stripped[1]+"#"+loginADD(stripped[1]);
                 else
-                    ris = "Login Errato";
+                    ris = "Login Errato.";
                 break;
             case "logout":
                 if (Logout(stripped[1]))
                     ris = "Logout effettuato correttamente. " + stripped[1];
                 else
-                    ris = "Logout Errato";
+                    ris = "Logout Errato. ";
                 break;
             case "createproject":
                 if (CreateProject(stripped[1], stripped[2]))
@@ -475,7 +477,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             default:
                 ris = "COMANDO NON RICONOSCIUTO";
         }
-        System.out.println("RIS="+ris);
+        //System.out.println("RIS="+ris);
         return ris;
     }
 
