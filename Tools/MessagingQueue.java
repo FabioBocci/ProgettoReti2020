@@ -6,8 +6,7 @@ import java.util.List;
 public class MessagingQueue
 {
     private List<String> queue;
-    private String msg;
-    private boolean sended;
+
 
     public MessagingQueue()
     {
@@ -24,20 +23,4 @@ public class MessagingQueue
         queue.clear();
         return old; 
     }
-
-    public synchronized void sendMsg(String msg)
-    {
-        sended=false;
-        this.msg=msg;
-    }
-    public synchronized String getMsg() {
-        if(!sended)
-        {
-            sended=true;
-            return this.msg;
-        }
-        return "";
-    }
-
-    public synchronized boolean isSended(){return sended;}
 }

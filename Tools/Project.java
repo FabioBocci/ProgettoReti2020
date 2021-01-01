@@ -33,7 +33,7 @@ public class Project {
 
     private ObjectMapper OM;
 
-    public Project(String ABS_PATH, String NomeProgetto) throws IOException {
+    public Project(String ABS_PATH, String NomeProgetto , String ip, int port) throws IOException {
         DELETED=false;
         this.ID_NAME = NomeProgetto;
         this.Cards = new ArrayList<>();
@@ -48,6 +48,8 @@ public class Project {
         this.ABS_path = ABS_PATH;
         this.OM = new ObjectMapper();
 
+        this.IP_Multicast=ip;
+        this.PORT=port;
 
         //Aggiungere creaizone della Cartella
         boolean found = false;
@@ -67,6 +69,11 @@ public class Project {
         }
         checkCards();
     }
+
+    public String getIP(){return this.IP_Multicast;}
+    public int getPORT(){return this.PORT;}
+    public void setIP(String ip){this.IP_Multicast=ip;}
+    public void setPORT(int port){this.PORT=port;}
 
     public void checkCards() throws IOException {
         Path path;
@@ -297,7 +304,7 @@ public class Project {
 
     //--------------------------TEST-----------------------//
     public static void main(String[] args) throws IOException {
-        Project pj = new Project("C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects", "03-Prova2");
+        Project pj = new Project("C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects", "03-Prova2","239.0.0.5",1998);
         pj.AddCard("ROBA", "prova di una lunga descirizone");
         System.out.println(pj.GetCards());
         //pj.MoveCard("ROBA2", "TODO", "INPROGRESS");
