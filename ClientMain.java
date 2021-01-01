@@ -25,25 +25,28 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
     private int PORT = 1999;
 
     private boolean EXIT = false;
-    private Map<String, String> UserState;
-    private Map<String, String> PJip;
-    private WorthServerRMI serverRMI;
-    private NotifyEventInterface nei;
-    private Scanner scan;
 
-    private String UserName;
-    private Boolean LOGGED;
+    private Map<String, String> UserState;  //Contiene le informazioni Username-State
+    private Map<String, String> PJip;       //Contiene le informazioni ProjectName - IP(per la chat)
+
+    private WorthServerRMI serverRMI;       //Interfaccia remota del Server
+    private NotifyEventInterface nei;       //Interfaccia forCallBacks
+
+    private Scanner scan;                   //Scanner per leggere da tastiera
+
+    private String UserName;                //se un utente è Loggato allora contiene il nomeUtente
+    private Boolean LOGGED;                 //True se un utente è loggato False altrimenti
 
     public ClientMain(String ip, int Port) throws RemoteException {
         super();
         this.IP = ip;
         this.PORT = Port;
-        UserState = new HashMap<>();
+        this.UserState = new HashMap<>();
         this.scan = new Scanner(System.in);
-        LOGGED = false;
-        nei = (NotifyEventInterface) UnicastRemoteObject.exportObject(this, 0);
+        this.LOGGED = false;
+        this.nei = (NotifyEventInterface) UnicastRemoteObject.exportObject(this, 0);
 
-        PJip = new HashMap<>();
+        this.PJip = new HashMap<>();
     }
 
     public synchronized void login(String User, String Password) throws RemoteException {
@@ -72,6 +75,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
     }
 
     private String getNewCommand() {
+        System.out.println("Inserisci un nuovo comando: ");
         return scan.nextLine();
     }
 
@@ -192,7 +196,30 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
     }
 
     private void help() {
-        System.out.flush();
+        System.out.println("----------------------------WELCOME TO HELP DESK------------------------");
+        System.out.println("Ecco una lista dei comandi che puoi usare:               ");
+        System.out.println("Register 'UserName' 'Password'                                 (**)");
+        System.out.println("Login 'Username' 'Password'                                    (**)");
+        System.out.println("Logout 'Username'                                        ");
+        System.out.println("listUser                                                 ");
+        System.out.println("listUserOnline                                           ");
+        System.out.println("CreateProject  'ProjectName' 'Username'                  ");
+        System.out.println("listProject                                              ");
+        System.out.println("addMember 'ProjectName' 'UserName'                              (*)");
+        System.out.println("ShowMembers 'ProjectName'                                       (*)");
+        System.out.println("ShowCards 'ProjectName'                                         (*)");
+        System.out.println("ShowCard 'ProjectName' 'CardName'                               (*)");
+        System.out.println("AddCard 'ProjectName' 'CardName'                                (*)");
+        System.out.println("MoveCard 'ProjectName' 'CardName' 'OldState' 'NewState'            ");
+        System.out.println("GetCardHistory 'ProjectName' 'CardName'                         (*)");
+        System.out.println("ReadChat 'ProjectName'                                          (*)");
+        System.out.println("SendChatMSG 'ProjectName' 'MSG'                                 (*)");
+        System.out.println("CancelProject 'ProjectName'                                     (*)");
+        System.out.println("---------------------------------NB:-------------------------------");
+        System.out.println(" (**) Utente non deve essere Loggato ");
+        System.out.println(" (*)  Utente deve appartenere ai membri di quel progetto ");
+        System.out.println("------------------------------------------------------------------");
+
         
     }
 
@@ -308,11 +335,12 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
                 //gestisco il comando
                 gestCommand(command,client);
                 if (EXIT)
+                {
+                    if(LOGGED)
+                        logout_Command("logout "+UserName, client);
                     break;
+                }
                 command="";
-                
-
-
             }
             
             client.close();
@@ -326,12 +354,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
         ClientMain cm = new ClientMain("127.0.0.1", 1999);
         cm.start();
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        System.out.println("Bye Bye");
     }
     
 }
