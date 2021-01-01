@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.rmi.*;
@@ -26,16 +27,18 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
 
     private boolean EXIT = false;
 
-    private Map<String, String> UserState;  //Contiene le informazioni Username-State
-    private Map<String, String> PJip;       //Contiene le informazioni ProjectName - IP(per la chat)
+    private Map<String, String> UserState; // Contiene le informazioni Username-State
 
-    private WorthServerRMI serverRMI;       //Interfaccia remota del Server
-    private NotifyEventInterface nei;       //Interfaccia forCallBacks
+    private Map<String, MessagingQueue> PJ_ChatQ; // Contiene le informazioni ProjectName - IP(per la chat)
+    private Map<String, ChatThread> PJ_Chat;
 
-    private Scanner scan;                   //Scanner per leggere da tastiera
+    private WorthServerRMI serverRMI; // Interfaccia remota del Server
+    private NotifyEventInterface nei; // Interfaccia forCallBacks
 
-    private String UserName;                //se un utente è Loggato allora contiene il nomeUtente
-    private Boolean LOGGED;                 //True se un utente è loggato False altrimenti
+    private Scanner scan; // Scanner per leggere da tastiera
+
+    private String UserName; // se un utente è Loggato allora contiene il nomeUtente
+    private Boolean LOGGED; // True se un utente è loggato False altrimenti
 
     public ClientMain(String ip, int Port) throws RemoteException {
         super();
@@ -46,16 +49,8 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
         this.LOGGED = false;
         this.nei = (NotifyEventInterface) UnicastRemoteObject.exportObject(this, 0);
 
-        this.PJip = new HashMap<>();
-    }
-
-    public synchronized void login(String User, String Password) throws RemoteException {
-
-        // altro codice
-
-        // ricezione degli utenti online ed ofline
-        NotifyEventInterface callbackObj = (NotifyEventInterface) UnicastRemoteObject.exportObject(this, 0);
-        serverRMI.registerForCallBacks(callbackObj, User);
+        this.PJ_Chat = new HashMap<>();
+        this.PJ_ChatQ = new HashMap<>();
     }
 
     @Override
@@ -75,14 +70,13 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
     }
 
     private String getNewCommand() {
+        System.out.println("------------------------------------------------------------------------");
         System.out.println("Inserisci un nuovo comando: ");
         return scan.nextLine();
     }
 
     public void gestCommand(String Command, SocketChannel client) throws IOException {
-
         String[] stripped_comm = Command.split(" ");
-
         switch (stripped_comm[0].toLowerCase()) {
             case "register":
                 if(!LOGGED)
@@ -190,6 +184,31 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
                 help();
                 break;
 
+            case "readchat":
+                if (LOGGED)
+                    if(CheckPJT(stripped_comm[1]))
+                        readMSG(stripped_comm[1]);
+                    else
+                        System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
+                else
+                    System.out.println("User NOT Logged");
+                break;
+            case "sendmsg":
+                if (LOGGED)
+                    if(CheckPJT(stripped_comm[1]))
+                        {
+                            String msgN=UserName+":";
+                            for(int i = 2; i<stripped_comm.length; i++)
+                            {
+                                msgN=msgN+" "+stripped_comm[i];
+                            }
+                            sendMSG(stripped_comm[1], msgN);
+                        }
+                    else
+                        System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
+                else
+                    System.out.println("User NOT Logged");
+                break;
             case "listuser":
                 if (LOGGED)
                     System.out.print(UserState.keySet());
@@ -209,6 +228,21 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
         }
     }
 
+    private void sendMSG(String pjt, String msg) {
+        try {
+            this.PJ_Chat.get(pjt).sendMsg(msg);
+            System.out.println("Messaggio inviato con successo");
+        } catch (NullPointerException | IOException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+    private void readMSG(String pjt)
+    {
+        System.out.println("------------------");
+        System.out.println(this.PJ_ChatQ.get(pjt).getAndClear());
+        System.out.println("------------------");
+    }
     private void register(String user, String password) {
         try {
             if(serverRMI.Register(user, password))
@@ -224,32 +258,32 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
 
     private void help() {
         System.out.println("----------------------------WELCOME TO HELP DESK------------------------");
-        System.out.println("Ecco una lista dei comandi che puoi usare:                         ");
-        System.out.println("Register 'UserName' 'Password'                                 (**)");          //DONE
-        System.out.println("Login 'Username' 'Password'                                    (**)");          //DONE
-        System.out.println("Logout 'Username'                                                  ");          //DONE
-        System.out.println("listUser                                                           ");          //DONE
-        System.out.println("listUserOnline                                                     ");          //DONE
-        System.out.println("CreateProject  'ProjectName' 'Username'                            ");          //NOT DONE (controllo sul nomeUtente)
-        System.out.println("listProject                                                        ");          //DONE 
-        System.out.println("addMember 'ProjectName' 'NewUserName'                           (*)");          //DONE
-        System.out.println("ShowMembers 'ProjectName'                                       (*)");          //
-        System.out.println("ShowCards 'ProjectName'                                         (*)");
-        System.out.println("ShowCard 'ProjectName' 'CardName'                               (*)");
-        System.out.println("AddCard 'ProjectName' 'CardName'                                (*)");
-        System.out.println("MoveCard 'ProjectName' 'CardName' 'OldState' 'NewState'            ");
-        System.out.println("GetCardHistory 'ProjectName' 'CardName'                         (*)");
-        System.out.println("ReadChat 'ProjectName'                                          (*)");
-        System.out.println("SendChatMSG 'ProjectName' 'MSG'                                 (*)");
-        System.out.println("EndProject 'ProjectName'                                        (*)");
-        System.out.println("Exit                                                            (**)");
-        System.out.println("Help                                                            (**)");
-        System.out.println("---------------------------------NB:-------------------------------");
+        System.out.println("Ecco una lista dei comandi che puoi usare:                              ");
+        System.out.println("Register 'UserName' 'Password'                                      (**)");          //DONE
+        System.out.println("Login 'Username' 'Password'                                         (**)");          //DONE
+        System.out.println("Logout 'Username'                                                       ");          //DONE
+        System.out.println("listUser                                                                ");          //DONE
+        System.out.println("listUserOnline                                                          ");          //DONE
+        System.out.println("CreateProject  'ProjectName' 'Username'                                 ");          //DONE
+        System.out.println("listProject                                                             ");          //DONE 
+        System.out.println("addMember 'ProjectName' 'NewUserName'                                (*)");          //DONE
+        System.out.println("ShowMembers 'ProjectName'                                            (*)");          //DONE
+        System.out.println("ShowCards 'ProjectName'                                              (*)");          //DONE
+        System.out.println("ShowCard 'ProjectName' 'CardName'                                    (*)");          //DONE
+        System.out.println("AddCard 'ProjectName' 'CardName'                                     (*)");          //TODO -- manca la funzione sia client sia server
+        System.out.println("MoveCard 'ProjectName' 'CardName' 'OldState' 'NewState'                 ");          //DONE
+        System.out.println("GetCardHistory 'ProjectName' 'CardName'                              (*)");          //DONE
+        System.out.println("ReadChat 'ProjectName'                                               (*)");          //DONE
+        System.out.println("SendMSG 'ProjectName' 'MSG'                                          (*)");          //DONE
+        System.out.println("EndProject 'ProjectName'                                             (*)");          //DONE
+        System.out.println("Exit                                                                (**)");          //DONE
+        System.out.println("Help                                                                (**)");          //DONE
+        System.out.println("-------------------------------------NB:--------------------------------");
         System.out.println(" (**) Utente non deve essere Loggato ");
         System.out.println(" (*)  Utente deve appartenere ai membri di quel progetto ");
         System.out.println(" per tutti i comandi (ad eccesioni di quelli con (**)) devi essere loggato per utilizzarli ");
         System.out.println(" 'UserName' va sostituito con il proprio UserName con cui si è fatto il Login ");
-        System.out.println("------------------------------------------------------------------");
+        System.out.println("------------------------------------------------------------------------");
 
         
     }
@@ -261,7 +295,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
 
     private boolean CheckPJT(String pjtName)
     {
-        if(!this.PJip.keySet().contains(pjtName)) return false;
+        if(!this.PJ_Chat.keySet().contains(pjtName)) return false;
         return true;
     }
     private boolean CheckName(String name){return UserName.equals(name);}
@@ -329,10 +363,25 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
 
     private void checkProject(String pj)
     {
-        String[] split = pj.split(" ");
-        for (String string : split) {
-            String[] US = string.split("&&");
-            this.PJip.put(US[0],US[1]);
+        try {
+            String[] split = pj.split(" ");
+            for (String string : split) {
+                String[] US = string.split("&&");
+                MessagingQueue queue = new MessagingQueue();
+                
+                int port = Integer.parseInt(US[2]);
+                MulticastSocket socket = new MulticastSocket(port);
+                ChatThread ct = new ChatThread(queue, socket, InetAddress.getByName(US[1]) , port );
+                this.PJ_Chat.put(US[0],ct);
+                this.PJ_ChatQ.put(US[0],queue);
+                System.out.println("--------------");
+                System.out.println(this.PJ_Chat);
+                System.out.println(this.PJ_ChatQ);
+                ct.start();
+            }
+            
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         //System.out.println(PJip);
     }

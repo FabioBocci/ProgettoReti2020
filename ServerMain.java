@@ -3,6 +3,7 @@ import Tools.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -26,7 +27,10 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     private static final int BUFFER_DIM = 4096;
     private static final int porta = 1999;
     private static final String EXIT_CMD = "exit";
+    private MulticastIpGenerator ip_gen; 
+
     List<Project> Progetti;
+    List<MulticastSocket> pippo;
     ArrayList<User> UPlist;
 
     //private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
@@ -34,6 +38,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
     public ServerMain() throws IOException {
         super();
+        ip_gen= new MulticastIpGenerator();
         UPlist = new ArrayList<>();
         checkDBUsers();
 
@@ -50,7 +55,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
         for (File file : fs) {
             if (file.isDirectory()) {
-                Progetti.add(new Project(path, file.getName()));
+
+                Progetti.add(new Project(path, file.getName(),ip_gen.nextIP(),ip_gen.nextPORT()));
             }
         }
     }
@@ -187,7 +193,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             if (pj.getName().equals(PJTname))
                 throw new ProjectNameAlreadyUsed(PJTname);
         }
-        Project prt = new Project(path, PJTname);
+        Project prt = new Project(path, PJTname, ip_gen.nextIP(),ip_gen.nextPORT());
         prt.AddMember(User);
         Progetti.add(prt);
         
@@ -410,7 +416,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         for (Project project : Progetti) {
             if(project.GetMember().contains(LogUser))
             {
-                result=result+"#"+project.getName()+"&&"+"FAKEIP";
+                result=result+"#"+project.getName()+"&&"+project.getIP()+"&&"+project.getPORT();
             }
         }
         return result;
