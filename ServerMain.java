@@ -29,7 +29,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     List<Project> Progetti;
     ArrayList<User> UPlist;
 
-    private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
+    //private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
     private String path = "./Projects/";
 
     public ServerMain() throws IOException {
@@ -43,14 +43,14 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
     // Funzione che controlla e carica i Projetti gia presententi
     private void checkDBProject() throws IOException {
-        File f = new File(ABS_PATH);
+        File f = new File(path);
         if (!f.isDirectory())
             throw new IllegalArgumentException("Path not directory");
         File fs[] = f.listFiles();
 
         for (File file : fs) {
             if (file.isDirectory()) {
-                Progetti.add(new Project(ABS_PATH, file.getName()));
+                Progetti.add(new Project(path, file.getName()));
             }
         }
     }
@@ -77,7 +77,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
     public synchronized void SaveAll() throws IOException {
         ObjectMapper om = new ObjectMapper();
-        File users = new File(ABS_PATH + "User.json");
+        File users = new File(path + "User.json");
         om.writeValue(users, UPlist);
 
         for (Project p : Progetti) {
@@ -187,7 +187,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             if (pj.getName().equals(PJTname))
                 throw new ProjectNameAlreadyUsed(PJTname);
         }
-        Project prt = new Project(ABS_PATH, PJTname);
+        Project prt = new Project(path, PJTname);
         prt.AddMember(User);
         Progetti.add(prt);
         
