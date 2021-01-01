@@ -98,19 +98,28 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
                 break;
             case "logout":
                 if (LOGGED)
-                    logout_Command(Command, client);
+                    if(CheckName(stripped_comm[1]))
+                        logout_Command(Command, client);
+                    else
+                        System.out.println("ERRORE: Nome non riconosciuto");
                 else
                     System.out.println("User NOT Logged");
                 break;
             case "createproject":
                 if (LOGGED)
-                    generic_Command(Command, client);
+                    if(CheckName(stripped_comm[2]))
+                        generic_Command(Command, client);
+                    else
+                    System.out.println("ERRORE: Nome utente non riconosciuto");
                 else
                     System.out.println("User NOT Logged");
                 break;
             case "endproject":
                 if (LOGGED)
-                    generic_Command(Command, client);
+                    if(CheckPJT(stripped_comm[1]))
+                        generic_Command(Command, client);
+                    else
+                        System.out.println("ERRRO: controlla di avere l'accesso e di aver inserito i dati giusti");
                 else
                     System.out.println("User NOT Logged");
                 break;
@@ -122,37 +131,55 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
                 break;
             case "addmember":
                 if (LOGGED)
-                    generic_Command(Command, client);
+                    if(CheckPJT(stripped_comm[1]) && CheckUser(stripped_comm[2]))
+                        generic_Command(Command, client);
+                    else
+                        System.out.print("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
                 else
                     System.out.println("User NOT Logged");
                 break;
             case "showmember":
                 if (LOGGED)
-                    generic_Command(Command, client);
+                    if(CheckPJT(stripped_comm[1]))
+                        generic_Command(Command, client);
+                    else
+                        System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
                 else
                     System.out.println("User NOT Logged");
                 break;
             case "showcards":
                 if (LOGGED)
-                    generic_Command(Command, client);
+                    if(CheckPJT(stripped_comm[1]))
+                        generic_Command(Command, client);
+                    else
+                        System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
                 else
                     System.out.println("User NOT Logged");
                 break;
             case "showcard":
                 if (LOGGED)
-                    generic_Command(Command, client);
+                    if(CheckPJT(stripped_comm[1]))
+                        generic_Command(Command, client);
+                    else
+                        System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
                 else
                     System.out.println("User NOT Logged");
                 break;
             case "getcardhistory":
                 if (LOGGED)
-                    generic_Command(Command, client);
+                    if(CheckPJT(stripped_comm[1]))
+                        generic_Command(Command, client);
+                    else
+                        System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
                 else
                     System.out.println("User NOT Logged");
                 break;
             case "movecard":
                 if (LOGGED)
-                    generic_Command(Command, client);
+                    if(CheckPJT(stripped_comm[1]))
+                        generic_Command(Command, client);
+                    else
+                        System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
                 else
                     System.out.println("User NOT Logged");
                 break;
@@ -197,16 +224,16 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
 
     private void help() {
         System.out.println("----------------------------WELCOME TO HELP DESK------------------------");
-        System.out.println("Ecco una lista dei comandi che puoi usare:               ");
-        System.out.println("Register 'UserName' 'Password'                                 (**)");
-        System.out.println("Login 'Username' 'Password'                                    (**)");
-        System.out.println("Logout 'Username'                                        ");
-        System.out.println("listUser                                                 ");
-        System.out.println("listUserOnline                                           ");
-        System.out.println("CreateProject  'ProjectName' 'Username'                  ");
-        System.out.println("listProject                                              ");
-        System.out.println("addMember 'ProjectName' 'UserName'                              (*)");
-        System.out.println("ShowMembers 'ProjectName'                                       (*)");
+        System.out.println("Ecco una lista dei comandi che puoi usare:                         ");
+        System.out.println("Register 'UserName' 'Password'                                 (**)");          //DONE
+        System.out.println("Login 'Username' 'Password'                                    (**)");          //DONE
+        System.out.println("Logout 'Username'                                                  ");          //DONE
+        System.out.println("listUser                                                           ");          //DONE
+        System.out.println("listUserOnline                                                     ");          //DONE
+        System.out.println("CreateProject  'ProjectName' 'Username'                            ");          //NOT DONE (controllo sul nomeUtente)
+        System.out.println("listProject                                                        ");          //DONE 
+        System.out.println("addMember 'ProjectName' 'NewUserName'                           (*)");          //DONE
+        System.out.println("ShowMembers 'ProjectName'                                       (*)");          //
         System.out.println("ShowCards 'ProjectName'                                         (*)");
         System.out.println("ShowCard 'ProjectName' 'CardName'                               (*)");
         System.out.println("AddCard 'ProjectName' 'CardName'                                (*)");
@@ -214,14 +241,30 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
         System.out.println("GetCardHistory 'ProjectName' 'CardName'                         (*)");
         System.out.println("ReadChat 'ProjectName'                                          (*)");
         System.out.println("SendChatMSG 'ProjectName' 'MSG'                                 (*)");
-        System.out.println("CancelProject 'ProjectName'                                     (*)");
+        System.out.println("EndProject 'ProjectName'                                        (*)");
+        System.out.println("Exit                                                            (**)");
+        System.out.println("Help                                                            (**)");
         System.out.println("---------------------------------NB:-------------------------------");
         System.out.println(" (**) Utente non deve essere Loggato ");
         System.out.println(" (*)  Utente deve appartenere ai membri di quel progetto ");
+        System.out.println(" per tutti i comandi (ad eccesioni di quelli con (**)) devi essere loggato per utilizzarli ");
+        System.out.println(" 'UserName' va sostituito con il proprio UserName con cui si è fatto il Login ");
         System.out.println("------------------------------------------------------------------");
 
         
     }
+    private boolean CheckUser(String NewUser)
+    {
+        if(!this.UserState.keySet().contains(NewUser))return false;
+        return true;
+    }
+
+    private boolean CheckPJT(String pjtName)
+    {
+        if(!this.PJip.keySet().contains(pjtName)) return false;
+        return true;
+    }
+    private boolean CheckName(String name){return UserName.equals(name);}
 
     private void generic_Command(String command, SocketChannel client) throws IOException {
         ByteBuffer msg = ByteBuffer.wrap(command.getBytes());
