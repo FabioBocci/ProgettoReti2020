@@ -192,12 +192,12 @@ public class Project {
 
         if(s==null) throw new CardDontFoundException(Name);
 
-        if( ! s.getState().equals(OldState.toUpperCase())) throw new IllegalArgumentException("Lo stato vecchio non combacia");
+        if( ! s.getState().toLowerCase().equals(OldState.toLowerCase())) throw new IllegalArgumentException("Lo stato vecchio non combacia");
 
         switch(OldState.toUpperCase())
         {
             case "TODO":
-                if(NewState.toUpperCase() != "INPROGRESS") {throw new IllegalMoveException(OldState,NewState);}
+                if(NewState.toUpperCase().equals( "INPROGRESS")) {throw new IllegalMoveException(OldState,NewState);}
                 else{
                     s.ChangeStatus("INPROGRESS");
                     Cards_TODO.remove(Name);
@@ -205,7 +205,7 @@ public class Project {
                     break;
                 }
             case "INPROGRESS":
-                if(NewState.toUpperCase() != "TOBEREVISED" && NewState.toUpperCase()!= "DONE") {throw new IllegalMoveException(OldState,NewState);}
+                if(NewState.toUpperCase().equals("TOBEREVISED") && NewState.toUpperCase().equals("DONE")) {throw new IllegalMoveException(OldState,NewState);}
                 else{
                     s.ChangeStatus(NewState.toUpperCase());
                     if(NewState.toUpperCase() == "TOBEREVISED")
@@ -220,10 +220,10 @@ public class Project {
                     break;
                 }
             case "TOBEREVISED":
-            if(NewState.toUpperCase() != "INPROGRESS" && NewState.toUpperCase()!= "DONE") {throw new IllegalMoveException(OldState,NewState);}
+            if(NewState.toUpperCase().equals( "INPROGRESS") && NewState.toUpperCase().equals( "DONE")) {throw new IllegalMoveException(OldState,NewState);}
                 else{
                     s.ChangeStatus(NewState.toUpperCase());
-                    if(NewState.toUpperCase() == "INPROGRESS")
+                    if(NewState.toUpperCase().equals("INPROGRESS"))
                     {
                         Cards_Revisited.remove(Name);
                         Cards_InProgess.add(Name);
