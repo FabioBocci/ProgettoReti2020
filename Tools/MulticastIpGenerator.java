@@ -4,14 +4,14 @@ import java.util.ArrayList;
 
 public class MulticastIpGenerator {
     private ArrayList<String> IP_lst;
-    private ArrayList port;
+    //private ArrayList port;
 
     private static final int MAX_GEN = 100;
     private int position=0;
     public MulticastIpGenerator()
     {
         IP_lst= new ArrayList<>();
-        port= new ArrayList<>();
+        //port= new ArrayList<>();
         generate();
     }
     private void generate()

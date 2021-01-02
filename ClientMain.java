@@ -88,7 +88,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
 
     private String getNewCommand() {
         System.out.println("------------------------------------------------------------------------");
-        System.out.println("Inserisci un nuovo comando: ");
+        System.out.println("Inserisci un nuovo comando:     type help for HELP ");
         return scan.nextLine();
     }
 
@@ -297,20 +297,20 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
         System.out.println("ShowMember 'ProjectName'                                             (*)");          //DONE
         System.out.println("ShowCards 'ProjectName'                                              (*)");          //DONE
         System.out.println("ShowCard 'ProjectName' 'CardName'                                    (*)");          //DONE
-        System.out.println("AddCard 'ProjectName' 'CardName'                                     (*)");          //TODO -- manca la funzione sia client sia server
+        System.out.println("AddCard 'ProjectName' 'CardName'                                     (*)");          //DONE
         System.out.println("MoveCard 'ProjectName' 'CardName' 'OldState' 'NewState'                 ");          //DONE
         System.out.println("GetCardHistory 'ProjectName' 'CardName'                              (*)");          //DONE
         System.out.println("ReadChat 'ProjectName'                                               (*)");          //DONE
         System.out.println("SendMSG 'ProjectName' 'MSG'                                          (*)");          //DONE
         System.out.println("EndProject 'ProjectName'                                             (*)");          //DONE
-        System.out.println("Exit                                                                (**)");          //DONE
-        System.out.println("Help                                                                (**)");          //DONE
+        System.out.println("Exit                                                                    ");          //DONE
+        System.out.println("Help                                                                    ");          //DONE
         System.out.println("-------------------------------------NB:--------------------------------");
         System.out.println(" (**) Utente non deve essere Loggato ");
         System.out.println(" (*)  Utente deve appartenere ai membri di quel progetto ");
         System.out.println(" per tutti i comandi (ad eccesioni di quelli con (**)) devi essere loggato per utilizzarli ");
-        System.out.println(" 'UserName' va sostituito con il proprio UserName con cui si è fatto il Login ");
-        System.out.println("------------------------------------------------------------------------");
+        //System.out.println("");
+        //System.out.println("------------------------------------------------------------------------");
 
         
     }
@@ -469,6 +469,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
                 gestCommand(command,client);
                 if (EXIT)
                 {
+                    //se sono loggato quando esco faccio un logout
                     if(LOGGED)
                         logout_Command("logout "+UserName, client);
                     break;
