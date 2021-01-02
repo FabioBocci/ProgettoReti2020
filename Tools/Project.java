@@ -171,7 +171,7 @@ public class Project {
     public boolean IsMember(String User){if(!DELETED)return Membri.contains(User); return false;}
 
     //Crea una nuova Card e la inserisce, se il nome non è gia usato da un'altra Card
-    public void AddCard(String Name, String Desc)
+    public void AddCard(String Name, String Desc)throws IllegalArgumentException
     {
         if(!DELETED)
         {
