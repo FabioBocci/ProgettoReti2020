@@ -2,6 +2,8 @@ import Exceptions.*;
 import Tools.*;
 import java.io.File;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.nio.ByteBuffer;
@@ -323,6 +325,21 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         if (pjt == null)
             throw new ProjectDontFoundException(PJTname);
         pjt.MoveCard(CARDname, lstOLD, lstNEW);
+
+        //aggiungere alla chat un messaggio del server tipo->  SERVER: Task 'NameCard' Moved from 'Old' to 'New'
+        try {
+            MulticastSocket mui = new MulticastSocket(pjt.getPORT());
+            InetAddress ia = InetAddress.getByName(pjt.getIP());
+            mui.joinGroup(ia);
+            byte[] buffer = ("SERVER: Task "+CARDname+" Moved from "+lstOLD+" to "+lstNEW).getBytes();
+            DatagramPacket datagram = new DatagramPacket(buffer,buffer.length,ia,pjt.getPORT());
+            mui.send(datagram);
+            mui.leaveGroup(ia);
+            mui.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return true;
     }
 
@@ -354,6 +371,18 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         if (pjt == null)
             throw new ProjectDontFoundException(PJTname);
 
+        try {
+            MulticastSocket mui = new MulticastSocket(pjt.getPORT());
+            InetAddress ia = InetAddress.getByName(pjt.getIP());
+            mui.joinGroup(ia);
+            byte[] buffer = ("SERVER: Task "+CardName+" Aggiunta al progetto").getBytes();
+            DatagramPacket datagram = new DatagramPacket(buffer,buffer.length,ia,pjt.getPORT());
+            mui.send(datagram);
+            mui.leaveGroup(ia);
+            mui.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         pjt.AddCard(CardName, Desc);
         return true;
     }
