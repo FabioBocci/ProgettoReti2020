@@ -61,6 +61,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
     }
 
+    //Funzione che contrlla e carica gli User-Password gia presenti nel DB
     private void checkDBUsers() throws JsonParseException, JsonMappingException, IOException {
         File f = new File(path);
         if (!f.isDirectory())
@@ -194,6 +195,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                 throw new ProjectNameAlreadyUsed(PJTname);
         }
         Project prt = new Project(path, PJTname, ip_gen.nextIP(),ip_gen.nextPORT());
+
+        usa.getNEI().notifyEventChat(prt.getIP(), prt.getPORT(), PJTname);
         prt.AddMember(User);
         Progetti.add(prt);
         
@@ -208,6 +211,20 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
         if(pkt==null)throw new ProjectDontFoundException(PJTname);
         if(!pkt.IsMember(User))throw new UserDontFoundException(User);
+
+        for(String user : pkt.GetMember())
+        {
+            for(User us : UPlist)
+            {
+                try {
+                        if(us.getUser().equals(user) && us.isOnline())
+                            us.getNEI().notifyEventProjectCancel(PJTname);
+                    } catch (RemoteException e) {
+
+                        e.printStackTrace();
+                    }
+            }
+        }
         pkt.delete();
 
         return true;
@@ -238,6 +255,12 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         if (pjt == null)
             throw new ProjectDontFoundException(PJTname);
 
+        try {
+            usa.getNEI().notifyEventChat(pjt.getIP(), pjt.getPORT(), PJTname);
+        } catch (RemoteException e) {
+
+            e.printStackTrace();
+        }
         pjt.AddMember(newUser);
 
         return true;
@@ -320,6 +343,20 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         return lst;
     }
 
+    public synchronized boolean addCard(String PJTname, String CardName , String Desc)throws ProjectDontFoundException,IllegalArgumentException
+    {
+        Project pjt = null;
+        for (Project pj : Progetti) {
+            if (pj.getName().equals(PJTname)) {
+                pjt = pj;
+            }
+        }
+        if (pjt == null)
+            throw new ProjectDontFoundException(PJTname);
+
+        pjt.AddCard(CardName, Desc);
+        return true;
+    }
     public void start() {
         String Ris = "";
         String Command = "";
@@ -479,6 +516,23 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                     ris = "Movimento effettuato " + stripped[2] + " da " + stripped[3] + " a " + stripped[4];
                 else
                     ris = "---";
+                break;
+            case "addcard":
+                try {
+                    String desc = "DESC:";
+                    for(int i = 3; i<stripped.length ; i++)
+                        desc=desc+" "+stripped[i];
+                    if(addCard(stripped[1],stripped[2],desc))
+                        ris="CARD: "+stripped[2]+" creata, sotto progetto: "+stripped[1];
+                    else
+                        ris="Errore nella creazione";
+                } catch (Exception e) {
+                    ris=e.toString();
+                }
+                break;
+            case "saveall":
+                SaveAll();
+                ris="tutto salvato! ";
                 break;
             default:
                 ris = "COMANDO NON RICONOSCIUTO";
