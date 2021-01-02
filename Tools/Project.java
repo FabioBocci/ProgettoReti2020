@@ -204,7 +204,7 @@ public class Project {
         switch(OldState.toUpperCase())
         {
             case "TODO":
-                if(NewState.toUpperCase().equals( "INPROGRESS")) {throw new IllegalMoveException(OldState,NewState);}
+                if(!NewState.toUpperCase().equals( "INPROGRESS")) {throw new IllegalMoveException(OldState,NewState);}
                 else{
                     s.ChangeStatus("INPROGRESS");
                     Cards_TODO.remove(Name);
@@ -212,7 +212,7 @@ public class Project {
                     break;
                 }
             case "INPROGRESS":
-                if(NewState.toUpperCase().equals("TOBEREVISED") && NewState.toUpperCase().equals("DONE")) {throw new IllegalMoveException(OldState,NewState);}
+                if(!NewState.toUpperCase().equals("TOBEREVISED") && !NewState.toUpperCase().equals("DONE")) {throw new IllegalMoveException(OldState,NewState);}
                 else{
                     s.ChangeStatus(NewState.toUpperCase());
                     if(NewState.toUpperCase() == "TOBEREVISED")
@@ -227,7 +227,7 @@ public class Project {
                     break;
                 }
             case "TOBEREVISED":
-            if(NewState.toUpperCase().equals( "INPROGRESS") && NewState.toUpperCase().equals( "DONE")) {throw new IllegalMoveException(OldState,NewState);}
+            if(!NewState.toUpperCase().equals( "INPROGRESS") && !NewState.toUpperCase().equals( "DONE")) {throw new IllegalMoveException(OldState,NewState);}
                 else{
                     s.ChangeStatus(NewState.toUpperCase());
                     if(NewState.toUpperCase().equals("INPROGRESS"))
