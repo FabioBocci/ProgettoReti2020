@@ -6,9 +6,9 @@ public interface NotifyEventInterface extends Remote {
     //notifica per cambio di stato di un utente.
     public void notifyEventUser(String User,String Status)throws RemoteException;
 
-    //TODO Chat ecc...
-    //notifica per nuovi messaggi aggiunti
-    public void notifyEventChat(String IP,int PORT) throws RemoteException;
-    public void notifyEventProjectCancel(String address, int port) throws RemoteException;
+
+    //notifiche per aggiunta ad un nuovo progetto o la sua cancellazione
+    public void notifyEventChat(String IP,int PORT,String PJT) throws RemoteException;
+    public void notifyEventProjectCancel(String PJT) throws RemoteException;
 
 }
