@@ -55,8 +55,7 @@ public class Project {
         boolean found = false;
         File f = new File(ABS_path);
         if (!f.isDirectory())
-            throw new RuntimeException("Path not a direcotory"); // TODO creare una nuova eccezione
-                                                                 // PathNotDirecotoryException
+            throw new RuntimeException("Path not a direcotory");
         for (String filename : f.list()) {
             if (filename == ID_NAME) {
                 found = true;
@@ -307,7 +306,7 @@ public class Project {
         Project pj = new Project("C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects", "03-Prova2","239.0.0.5",1998);
         pj.AddCard("ROBA", "prova di una lunga descirizone");
         System.out.println(pj.GetCards());
-        //pj.MoveCard("ROBA2", "TODO", "INPROGRESS");
+        //pj.MoveCard("ROBA2", "todo", "INPROGRESS");
         //System.out.println(pj.Cards.get(0).getInfo());
         System.out.println(pj.GetCardInfo("ROBA"));
         System.out.println(pj.getCardHistory("ROBA"));

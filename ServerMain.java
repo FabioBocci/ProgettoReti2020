@@ -32,7 +32,6 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     private MulticastIpGenerator ip_gen; 
 
     List<Project> Progetti;
-    List<MulticastSocket> pippo;
     ArrayList<User> UPlist;
 
     //private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";

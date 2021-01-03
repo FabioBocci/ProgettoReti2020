@@ -17,7 +17,7 @@ import java.util.Scanner;
 import Exceptions.NUserException;
 import Tools.*;
 
-public class ClientMain extends RemoteObject implements NotifyEventInterface, ClientInterface {
+public class ClientMain extends RemoteObject implements NotifyEventInterface{
 
     // private static final String EXIT_CMD = "exit";
     private static final long serialVersionUID = 1L;
@@ -92,7 +92,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
         return scan.nextLine();
     }
 
-    public void gestCommand(String Command, SocketChannel client) throws IOException {
+    public synchronized void gestCommand(String Command, SocketChannel client) throws IOException {
         String[] stripped_comm = Command.split(" ");
         switch (stripped_comm[0].toLowerCase()) {
             case "register":
@@ -297,7 +297,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface, Cl
         System.out.println("ShowMember 'ProjectName'                                             (*)");          //DONE
         System.out.println("ShowCards 'ProjectName'                                              (*)");          //DONE
         System.out.println("ShowCard 'ProjectName' 'CardName'                                    (*)");          //DONE
-        System.out.println("AddCard 'ProjectName' 'CardName'                                     (*)");          //DONE
+        System.out.println("AddCard 'ProjectName' 'CardName' 'DESC'                              (*)");          //DONE
         System.out.println("MoveCard 'ProjectName' 'CardName' 'OldState' 'NewState'                 ");          //DONE
         System.out.println("GetCardHistory 'ProjectName' 'CardName'                              (*)");          //DONE
         System.out.println("ReadChat 'ProjectName'                                               (*)");          //DONE
