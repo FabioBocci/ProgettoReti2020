@@ -1,7 +1,7 @@
 package Tools;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
+                //Classe di Support per lettura e scrittura su JSON
 public class User {
     private String Username;
     private String Password;
@@ -20,7 +20,7 @@ public class User {
     public void setUser(String Username){ this.Username=Username;}
     public void setPassword(String Password){ this.Password=Password;}
 
-
+    //Aggiunti boolean se l'utente è Online e la relativa NEI
     private boolean online;
     private NotifyEventInterface nei;
 

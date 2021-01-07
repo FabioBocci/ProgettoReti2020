@@ -51,7 +51,7 @@ public class ChatThread extends Thread {
             multicast.joinGroup(group);
             while(!Thread.interrupted())
             {
-                recive();
+                recive();   //Legge i messaggi sulla chat e le aggiunge alla MessagingQueue
             }
             multicast.leaveGroup(group);
             

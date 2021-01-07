@@ -17,7 +17,8 @@ public class MessagingQueue
     {
         queue.add(s);
     }
-
+    
+    //Restituisco una nuova lista uguale alla precedente, e pulisco quella vecchia
     public synchronized List<String> getAndClear() {
         List<String> old= new ArrayList<>(queue);
         queue.clear();

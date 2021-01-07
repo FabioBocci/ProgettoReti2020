@@ -571,34 +571,15 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
     public static void main(String[] args) throws IOException, AlreadyBoundException {
         ServerMain sm = new ServerMain();
-       /*  
-        sm.Register("Fabio", "01234567");
-        sm.Register("Mario", "01234567");
-        
-        String str_string = sm.execute("listproject");
-        str_string = str_string.replace("[", "");
-        str_string = str_string.replace(" ", "");
-        str_string = str_string.replace("]", "");
-        List<String> myList = new ArrayList<String>(Arrays.asList(str_string.split(",")));
-        System.out.println(str_string);
-        System.out.println(myList);
-        //sm.SaveAll(); */
 
+        //Creo ed esporto il Server come RemoteObject
         WorthServerRMI stub = (WorthServerRMI) UnicastRemoteObject.exportObject(sm, 0);
         LocateRegistry.createRegistry(30000);
         Registry r = LocateRegistry.getRegistry(30000);
 
         r.bind("SERVER", stub);
 
-        /* Scanner sc = new Scanner(System.in);
-        while(true)
-        {
-            String cmd = sc.nextLine();
-            String res = sm.execute(cmd);
-
-            System.out.println("RES= "+res);
-
-        } */
+        //Avvio del server TCP
         sm.start();
 
 

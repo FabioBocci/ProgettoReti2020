@@ -16,20 +16,20 @@ import Exceptions.*;
 
 public class Project {
 
-    private String ID_NAME;
-    private List<Card> Cards;
+    private String ID_NAME;         //Nome del progetto
+    private List<Card> Cards;       //Lista delle CARD
     
-    private List<String> Cards_TODO; 
-    private List<String> Cards_InProgess;
-    private List<String> Cards_Revisited; 
-    private List<String> Cards_Done;
+    private List<String> Cards_TODO;        //Lista con card in stato Todo
+    private List<String> Cards_InProgess;   //Lista con card in stato InProgress
+    private List<String> Cards_Revisited;   //Lista con card in stato Reevisited
+    private List<String> Cards_Done;        //Lista con card in stato Done
     
-    private List<String> Membri;
+    private List<String> Membri;            //Lista dei membri del progetto
 
     private String IP_Multicast;
     private int PORT = 1998;
-    private boolean DELETED;
-    private String ABS_path;
+    private boolean DELETED;        //Variabile bool per non chiamare funzioni su progetti eliminati
+    private String ABS_path;        //Path di dove va salvato il progetto
 
     private ObjectMapper OM;
 
@@ -51,7 +51,7 @@ public class Project {
         this.IP_Multicast=ip;
         this.PORT=port;
 
-        //Aggiungere creaizone della Cartella
+        //se non esiste crea la cartella del progetto
         boolean found = false;
         File f = new File(ABS_path);
         if (!f.isDirectory())
@@ -74,6 +74,7 @@ public class Project {
     public void setIP(String ip){this.IP_Multicast=ip;}
     public void setPORT(int port){this.PORT=port;}
 
+    //Se presenti carica le Card e gli User dal DB
     public void checkCards() throws IOException {
         Path path;
         path = Paths.get(ABS_path + "/" + ID_NAME + "/");
@@ -118,6 +119,7 @@ public class Project {
         sc.close();
     }
 
+    //Salva tutti i file (CARD e Users)
     public void SaveAll() throws IOException 
     {
         if(!DELETED)    //controllo che il progetto non sia eliminato

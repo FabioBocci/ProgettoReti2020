@@ -3,6 +3,7 @@ import java.rmi.RemoteException;
 import java.util.List;
 import Exceptions.*;
 public interface WorthServer{
+    //Interfaccia semplificata del Server (Utilizzata principalmente per sapere quali metodi il client poteva chiamare)
 
     public boolean Login(String Username, String Password)throws IllegalArgumentException,UserDontFoundException, RemoteException;
     public boolean Logout(String User)throws IllegalArgumentException,UserDontFoundException, RemoteException;
