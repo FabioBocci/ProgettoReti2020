@@ -30,7 +30,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
 
     private Map<String, String> UserState; // Contiene le informazioni Username-State
 
-    private Map<String, MessagingQueue> PJ_ChatQ; // Contiene le informazioni ProjectName - IP(per la chat)
+    //private Map<String, MessagingQueue> PJ_ChatQ; // Contiene le informazioni ProjectName - IP(per la chat)
     private Map<String, ChatThread> PJ_Chat;
 
     private WorthServerRMI serverRMI; // Interfaccia remota del Server
@@ -40,6 +40,9 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
 
     private String UserName; // se un utente è Loggato allora contiene il nomeUtente
     private Boolean LOGGED; // True se un utente è loggato False altrimenti
+
+    private Object lock_project;
+    private Object lock_user;
 
     public ClientMain(String ip, int Port) throws RemoteException {
         super();
@@ -51,38 +54,48 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
         this.nei = (NotifyEventInterface) UnicastRemoteObject.exportObject(this, 0);
 
         this.PJ_Chat = new HashMap<>();
-        this.PJ_ChatQ = new HashMap<>();
+        //this.PJ_ChatQ = new HashMap<>();
+
+        lock_project = new Object();
+        lock_user = new Object();
     }
 
     @Override
-    public synchronized void notifyEventUser(String User, String Status) throws RemoteException {
-        UserState.put(User, Status);
+    public void notifyEventUser(String User, String Status) throws RemoteException {
+        synchronized(lock_user)
+        {
+            UserState.put(User, Status);
+        }
     }
 
     @Override
-    public synchronized void notifyEventChat(String IP, int PORT, String PJT) throws RemoteException {
-        try {
-            MessagingQueue que = new MessagingQueue();
-            MulticastSocket mus = new MulticastSocket(PORT);
-            InetAddress group = InetAddress.getByName(IP);
-            ChatThread ct = new ChatThread(que, mus, group, PORT);
-            PJ_Chat.put(PJT, ct);
-            ct.start();
-            PJ_ChatQ.put(PJT, que);
-            System.out.println("AGGIUNTO ALLA CHAT DEL PROGETTO: "+PJT);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void notifyEventChat(String IP, int PORT, String PJT) throws RemoteException {
+        synchronized(lock_project)
+        {
+            try {
+                MulticastSocket mus = new MulticastSocket(PORT);
+                InetAddress group = InetAddress.getByName(IP);
+                ChatThread ct = new ChatThread(mus, group, PORT);
+                PJ_Chat.put(PJT, ct);
+                ct.start();
+    
+                System.out.println("AGGIUNTO ALLA CHAT DEL PROGETTO: "+PJT);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         
 
     }
 
     @Override
-    public synchronized void notifyEventProjectCancel(String pjt) throws RemoteException {
-        PJ_Chat.get(pjt).interrupt();
-        PJ_Chat.remove(pjt);
-        PJ_ChatQ.remove(pjt);
-        System.out.println("PROGETTO TERMINATO: "+pjt);
+    public void notifyEventProjectCancel(String pjt) throws RemoteException {
+        synchronized(lock_project)
+        {
+            PJ_Chat.get(pjt).interrupt();
+            PJ_Chat.remove(pjt);
+            System.out.println("PROGETTO TERMINATO: "+pjt);
+        }
 
     }
 
@@ -92,7 +105,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
         return scan.nextLine();
     }
 
-    public synchronized void gestCommand(String Command, SocketChannel client) throws IOException {
+    public void gestCommand(String Command, SocketChannel client) throws IOException {
         String[] stripped_comm = Command.split(" ");
         switch (stripped_comm[0].toLowerCase()) {
             case "register":
@@ -179,6 +192,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
                         generic_Command(Command, client);
                     else
                         System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
+
                 else
                     System.out.println("User NOT Logged");
                 break;
@@ -188,6 +202,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
                         generic_Command(Command, client);
                     else
                         System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
+
                 else
                     System.out.println("User NOT Logged");
                 break;
@@ -237,16 +252,24 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
                 else
                     System.out.println("User NOT Logged");
                 break;
-
             case "listuseronline":
-                for (String use : UserState.keySet()) {
-                    if (UserState.get(use).contains("ONLINE"))
-                        System.out.print(use + " ");
+            if(LOGGED)
+            {
+                synchronized(lock_user)
+                {
+                    for (String use : UserState.keySet()) {
+                        if (UserState.get(use).contains("ONLINE"))
+                            System.out.print(use + " ");
+                    }
+                    System.out.println("");
                 }
-                System.out.println("");
-                break;
+            }
+            else
+                System.out.println("User not logged");
+            break;
             case "saveall":
                 generic_Command(Command, client);
+                break;
             default:
                 System.out.println("Comando non riconosciuto");
         }
@@ -263,7 +286,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
     }
     private void readMSG(String pjt)
     {
-        List<String> str = this.PJ_ChatQ.get(pjt).getAndClear();
+        List<String> str = this.PJ_Chat.get(pjt).readMsg();
         System.out.println("------------------");
         for (String string : str) {
             System.out.println(string);
@@ -316,17 +339,24 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
     }
     private boolean CheckUser(String NewUser)
     {
-        if(!this.UserState.keySet().contains(NewUser))return false;
-        return true;
+        synchronized(lock_user)
+        {
+            if(!this.UserState.keySet().contains(NewUser))return false;
+            return true;
+        }
     }
 
     private boolean CheckPJT(String pjtName)
     {
-        if(!this.PJ_Chat.keySet().contains(pjtName)) return false;
-        return true;
+        synchronized(lock_project)
+        {
+            if(!this.PJ_Chat.keySet().contains(pjtName)) return false;
+            return true;
+        }
     }
     private boolean CheckName(String name){return UserName.equals(name);}
 
+    //mandoo il comando al server e stampo la risposta ricevuta
     private void generic_Command(String command, SocketChannel client) throws IOException {
         ByteBuffer msg = ByteBuffer.wrap(command.getBytes());
         client.write(msg);
@@ -339,6 +369,8 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
         System.out.println(risposta);
     }
 
+    //Comando per effettuare il login
+    //se andato a buon fine registra anche l'interfaccia per le CallBacks e carica gli User-State e ProjectName-IP
     private void login_Command(String command, SocketChannel client)throws IOException {
         ByteBuffer msg = ByteBuffer.wrap(command.getBytes());
         client.write(msg);
@@ -377,6 +409,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
 
         
     }
+    //funzione chiamata da Login_Command per caricare gli utenti nel DB
     private void checkUsers(String users)
     {
         String[] split = users.split(" ");
@@ -387,20 +420,21 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
         }
         //System.out.println(UserState);
     }
-
+    //funzione chiamata da Login_Command per caricare i ProjectName-ChatThread nel DB 
+    //e creare i thread delle chat
     private void checkProject(String pj)
     {
         try {
             String[] split = pj.split(" ");
             for (String string : split) {
                 String[] US = string.split("&&");
-                MessagingQueue queue = new MessagingQueue();
+                //MessagingQueue queue = new MessagingQueue();
                 
                 int port = Integer.parseInt(US[2]);
                 MulticastSocket socket = new MulticastSocket(port);
-                ChatThread ct = new ChatThread(queue, socket, InetAddress.getByName(US[1]) , port );
+                ChatThread ct = new ChatThread(socket, InetAddress.getByName(US[1]) , port );
                 this.PJ_Chat.put(US[0],ct);
-                this.PJ_ChatQ.put(US[0],queue);
+                //this.PJ_ChatQ.put(US[0],queue);
 
                 //System.out.println("--------------");
                 //System.out.println(this.PJ_Chat);
@@ -415,6 +449,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
         //System.out.println(PJip);
     }
 
+    //effettuo il comando Logout se riuscito interrompe tutti i thread delle chat
     private void logout_Command(String command, SocketChannel client) throws IOException {
 
         serverRMI.unregisterForCallback(nei, UserName);
@@ -439,14 +474,16 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
         }
         else
         {
-            /*
             //esco da tutte le chat una volta fatto il LOGOUT
-            for(String pjt : this.PJ_Chat.keySet())
+            synchronized(lock_project)
             {
-                PJ_Chat.get(pjt).interrupt();
-                PJ_Chat.remove(pjt);
-                PJ_ChatQ.remove(pjt);
-            }*/
+                for(String pjt : this.PJ_Chat.keySet())
+                {
+                    PJ_Chat.get(pjt).interrupt();
+                    PJ_Chat.remove(pjt);
+                    //PJ_ChatQ.remove(pjt);
+                }
+            }
         }
 
     }
