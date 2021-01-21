@@ -4,20 +4,21 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.List;
 
 public class ChatThread extends Thread {
 
     final static int BUFFER_SIZE = 4096;
+
     private MessagingQueue queue;
-
-
     private int PORT;
     private MulticastSocket multicast;
     private InetAddress group;
 
-    public ChatThread(MessagingQueue queue, MulticastSocket socket , InetAddress group , int port) throws IOException
+
+    public ChatThread(MulticastSocket socket , InetAddress group , int port) throws IOException
     {
-        this.queue=queue;
+        this.queue=new MessagingQueue();
         this.PORT=port;
         this.multicast = socket;
         this.group = group;
@@ -31,6 +32,11 @@ public class ChatThread extends Thread {
         multicast.send(datagram);
     }
     
+    public List<String> readMsg()
+    {
+        return queue.getAndClear();
+    }
+
     public void addMessage(String msg)
     {
         queue.put(msg);
