@@ -205,14 +205,14 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
     }
 
     @Override
-    public synchronized boolean EndProject(String PJTname, String User) throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
+    public synchronized boolean EndProject(String PJTname, String User) throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException,ProjectNotFinishableException {
         Project pkt=null;
         for (Project project : Progetti) {
             if(project.getName().equals(PJTname))pkt=project;
         }
         if(pkt==null)throw new ProjectDontFoundException(PJTname);
         if(!pkt.IsMember(User))throw new UserDontFoundException(User);
-
+        if(!pkt.IsDone())throw new ProjectNotFinishableException("Progetto selezionato non terminato");
         for(String user : pkt.GetMember())
         {
             for(User us : UPlist)
