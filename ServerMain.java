@@ -26,25 +26,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class ServerMain extends RemoteObject implements WorthServer, WorthServerRMI {
 
     private static final long serialVersionUID = 1L;
-    private static final int BUFFER_DIM = 4096;
+    private static final int BUFFER_DIM = 4096;     //dimensione del Buffer per messaggi client-server
     private static final int porta = 1999;
     private static final String EXIT_CMD = "exit";
-    private MulticastIpGenerator ip_gen; 
+    private MulticastIpGenerator ip_gen;            //classe per generare IP di Multicast 
 
-    List<Project> Progetti;
-    ArrayList<User> UPlist;
+    List<Project> Progetti;                 //lista dei progetti
+    ArrayList<User> UPlist;                 //arraylist degli utenti
 
     //private String ABS_PATH = "C:/Users/Fabio/Desktop/Progetto Reti Worth/Projects/";
     private String path = "./Projects/";
 
     public ServerMain() throws IOException {
         super();
-        ip_gen= new MulticastIpGenerator();
+        ip_gen= new MulticastIpGenerator(); 
         UPlist = new ArrayList<>();
-        checkDBUsers();
+        checkDBUsers();         //controllo se ci sono degli utenti salvati nel DB
 
         Progetti = new ArrayList<>();
-        checkDBProject();
+        checkDBProject();       //controllo se ci sono dei progetti salvati nel DB
     }
 
     // Funzione che controlla e carica i Projetti gia presententi
@@ -62,7 +62,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
     }
 
-    //Funzione che contrlla e carica gli User-Password gia presenti nel DB
+    //Funzione che controlla e carica gli User-Password gia presenti nel DB
     private void checkDBUsers() throws JsonParseException, JsonMappingException, IOException {
         File f = new File(path);
         if (!f.isDirectory())
@@ -82,7 +82,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             user.setOnline(false);
         }
     }
-
+    //funzione che salva tutto il DB
     public synchronized void SaveAll() throws IOException {
         ObjectMapper om = new ObjectMapper();
         File users = new File(path + "User.json");
@@ -95,6 +95,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         System.out.println("Tutto salvato correttamente");
     }
 
+    //funzione chiamata attraverso l'interfaccia RMI per registrare un nuovo utente
     @Override
     public synchronized boolean Register(String Username, String Passw)
             throws RemoteException, IllegalArgumentException, NUserException {
@@ -118,6 +119,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         return true;
     }
 
+    //funzione chiamata attraverso l'interfaccia RMI per registrare una interfaccia delle Callbacks del client
     @Override
     public synchronized void registerForCallBacks(NotifyEventInterface ClientInterface,String User) throws RemoteException {
         User usa=null;
@@ -130,6 +132,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
     }
 
+    //funzione chiamta attraverso l'intefaccia RMI per eliminare un interfaccia delle Callbacks del client
     @Override
     public synchronized void unregisterForCallback(NotifyEventInterface ClientInterface, String User) throws RemoteException {
         User usa=null;
@@ -142,6 +145,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
     }
 
+    //funzione utilizzata per effettuare il Login
     @Override
     public synchronized boolean Login(String Username, String Password)throws IllegalArgumentException, UserDontFoundException, RemoteException {
         User usa=null;
@@ -165,7 +169,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
         return true;
     }
-
+    //funzione utilizzata per effetturare il logout
     @Override
     public synchronized boolean Logout(String Username)throws IllegalArgumentException, UserDontFoundException, RemoteException {
         User usa=null;
@@ -183,7 +187,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
         return true;
     }
-
+    //funzione utilizzata per creare un nuovo progetto
+    //restituisce un errore se il progetto è gia presente o se l'utente non è presente nel DB
     @Override
     public synchronized boolean CreateProject(String PJTname, String User)throws IllegalArgumentException, UserDontFoundException, ProjectNameAlreadyUsed, IOException {
         User usa=null;
@@ -203,7 +208,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         
         return true;
     }
-
+    //funzione utilizzata per terminare un progetto (se possibile)
+    //restituisce un errore se utente non ha l'accesso a quel progetto, se il progetto non esiste, se il progetto ha ancora task non terminate
     @Override
     public synchronized boolean EndProject(String PJTname, String User) throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException,ProjectNotFinishableException {
         Project pkt=null;
@@ -230,7 +236,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
         return true;
     }
-
+    //funzione che restituisce una lista con il nome di tutti i progetti nel DB
     @Override
     public synchronized List<String> ListProject() {
         ArrayList<String> str = new ArrayList<String>();
@@ -239,7 +245,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
         return str;
     }
-
+    //funzione che permette di inserire un nuovo utente all'interno di un progetto
+    //restituisce un errore se l'utente non è all'interno del DB o se il progetto non esiste
     @Override
     public synchronized boolean addMembers(String PJTname, String newUser)throws IllegalArgumentException, UserDontFoundException, ProjectDontFoundException {
         User usa=null;
@@ -267,6 +274,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         return true;
     }
 
+    //restituisce una lista contente tutti gli utenti che partecipano al progetto
+    //restituisce un errore se il progetto non esiste
     @Override
     public synchronized List<String> ShowMembers(String PJTname) throws ProjectDontFoundException {
         Project pjt = null;
@@ -280,7 +289,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
         return pjt.GetMember();
     }
-
+    //restituisce una lista contente tutti i nomi delle card all'iinterno di un progetto
+    //restituisce un errore se il progetto non esiste
     @Override
     public synchronized List<String> ShowCards(String PJTname) throws ProjectDontFoundException {
         Project pjt = null;
@@ -294,7 +304,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
         return pjt.GetCards();
     }
-
+    //restituisce una lista contenten tutte le info di una card
+    //restituisce un errore se il progetto non esiste o se la card non è all'interno del progetto scelto
     @Override
     public synchronized List<String> ShowCard(String PJTname, String CARDname)
             throws ProjectDontFoundException, CardDontFoundException {
@@ -311,7 +322,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             throw new CardDontFoundException(CARDname);
         return lst;
     }
-
+    //funzione che permettte di far cambiare stato alle card, se andato a buon fine manda un messaggio in chat dell'avvenuto spostamento
+    //restituisce un errore se il progetto non esiste, se la card non fa parte del progetto o se il movimento è illegale
     @Override
     public synchronized boolean MoveCard(String PJTname, String CARDname, String lstOLD, String lstNEW)
             throws ProjectDontFoundException, CardDontFoundException, IllegalMoveException {
@@ -341,7 +353,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
 
         return true;
     }
-
+    //restituisce un lista contente tutta la storia di una card
+    //restituisce un errore se il progetto non esiste o se la card non appartiene al progetto
     @Override
     public synchronized List<String> GetCardHistory(String PJTname, String CARDname)
             throws ProjectDontFoundException, CardDontFoundException {
@@ -358,7 +371,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             throw new CardDontFoundException(CARDname);
         return lst;
     }
-
+    //funzione che aggiunge una nuova card al progetto con la relativa descizione, se andato a buon fine manda un chat un messaggio
+    //restituisce un errore se il progetto non esiste o se la card è gia presente
     public synchronized boolean addCard(String PJTname, String CardName , String Desc)throws ProjectDontFoundException,IllegalArgumentException
     {
         Project pjt = null;
@@ -424,7 +438,6 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
                             SocketChannel client = (SocketChannel) key.channel();
                             ByteBuffer read = (ByteBuffer) key.attachment();
                             client.read(read);
-
                             Command = new String(read.array()).trim();
                             read.clear();
 
@@ -464,6 +477,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
  
     }
+    //funzione chiamata dopo un login per aggiunge alla risposta le informaizioni su gli utenti ed i progetti
     private String loginADD(String LogUser)
     {
         String result="";
@@ -486,7 +500,7 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
         }
         return result;
     }
-
+    //dopo aver letto un comando lo mando in esecuzione attraverso le funzioni sopra implementate
     private String execute(String cmd)
             throws IllegalArgumentException, UserDontFoundException, ProjectNameAlreadyUsed, IOException {
         String[] stripped = cmd.split(" ");

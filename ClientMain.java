@@ -30,8 +30,8 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
 
     private Map<String, String> UserState; // Contiene le informazioni Username-State
 
-    //private Map<String, MessagingQueue> PJ_ChatQ; // Contiene le informazioni ProjectName - IP(per la chat)
-    private Map<String, ChatThread> PJ_Chat;
+    //private Map<String, MessagingQueue> PJ_ChatQ; 
+    private Map<String, ChatThread> PJ_Chat;    //contiene il nome del progetto come chiave e il thead della chat come valore
 
     private WorthServerRMI serverRMI; // Interfaccia remota del Server
     private NotifyEventInterface nei; // Interfaccia forCallBacks
@@ -41,25 +41,26 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
     private String UserName; // se un utente è Loggato allora contiene il nomeUtente
     private Boolean LOGGED; // True se un utente è loggato False altrimenti
 
-    private Object lock_project;
-    private Object lock_user;
+    private Object lock_project;    //object utilizzato per lock sui progetti
+    private Object lock_user;       //object utilizzato per lock su gli utenti
 
     public ClientMain(String ip, int Port) throws RemoteException {
         super();
-        this.IP = ip;
-        this.PORT = Port;
-        this.UserState = new HashMap<>();
-        this.scan = new Scanner(System.in);
-        this.LOGGED = false;
-        this.nei = (NotifyEventInterface) UnicastRemoteObject.exportObject(this, 0);
-
-        this.PJ_Chat = new HashMap<>();
+        this.IP = ip;                       //ip del server
+        this.PORT = Port;                   //porta in cui andarsi a connettere al server
+        this.scan = new Scanner(System.in); //scanner per leggere i messaggi da tastiera
+        this.LOGGED = false;                //boolean per controllare che siamo loggati o no
+        this.nei = (NotifyEventInterface) UnicastRemoteObject.exportObject(this, 0);    //creo l'interfaccia per le callbacks da passare al server
+        
+        this.UserState = new HashMap<>();   //map per User-State (online/offline)
+        this.PJ_Chat = new HashMap<>();     //map per ProjectName-ChatThread
         //this.PJ_ChatQ = new HashMap<>();
 
-        lock_project = new Object();
-        lock_user = new Object();
+        lock_project = new Object();        //object per lock sui progetti
+        lock_user = new Object();           //object per lock sugli utenti 
     }
 
+    //funzione chiamata dal server quando un utente cambia stato (online-offline)
     @Override
     public void notifyEventUser(String User, String Status) throws RemoteException {
         synchronized(lock_user)
@@ -68,6 +69,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
         }
     }
 
+    //funzione chiamata dal server quando si viene aggiunti ad un nuovo progetto
     @Override
     public void notifyEventChat(String IP, int PORT, String PJT) throws RemoteException {
         synchronized(lock_project)
@@ -88,6 +90,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
 
     }
 
+    //funzione chiamata dal server quando un progetto viene terminato
     @Override
     public void notifyEventProjectCancel(String pjt) throws RemoteException {
         synchronized(lock_project)
@@ -104,7 +107,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
         System.out.println("Inserisci un nuovo comando:     type help for HELP ");
         return scan.nextLine();
     }
-
+    //funzione che serve per gestire i comandi ed inviarli al server dopo aver fatto i controlli base
     public void gestCommand(String Command, SocketChannel client) throws IOException {
         String[] stripped_comm = Command.split(" ");
         switch (stripped_comm[0].toLowerCase()) {
@@ -192,7 +195,6 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
                         generic_Command(Command, client);
                     else
                         System.out.println("ERRORE: controlla di aver l'accesso e di aver inserito i dati giusti");
-
                 else
                     System.out.println("User NOT Logged");
                 break;
@@ -274,7 +276,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
                 System.out.println("Comando non riconosciuto");
         }
     }
-
+    //Funzione utilizata per mandare un messaggio in una chat
     private void sendMSG(String pjt, String msg) {
         try {
             this.PJ_Chat.get(pjt).sendMsg(msg);
@@ -284,6 +286,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
             e.printStackTrace();
         }
     }
+    //funzione utilizzata per leggere i messaggi da una chat
     private void readMSG(String pjt)
     {
         List<String> str = this.PJ_Chat.get(pjt).readMsg();
@@ -337,6 +340,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
 
         
     }
+    //controlla che il nome dell'utente passato come parametro sia presente negli utenti
     private boolean CheckUser(String NewUser)
     {
         synchronized(lock_user)
@@ -345,7 +349,7 @@ public class ClientMain extends RemoteObject implements NotifyEventInterface{
             return true;
         }
     }
-
+    //controlla che il progetto sia fra i progetti accessibili dall'utente loggato
     private boolean CheckPJT(String pjtName)
     {
         synchronized(lock_project)

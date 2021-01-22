@@ -14,7 +14,7 @@ public class MulticastIpGenerator {
         //port= new ArrayList<>();
         generate();
     }
-    private void generate()
+    private void generate() //genera 100 IP di Multicast
     {
         int i=0;
         Random random = new Random();
