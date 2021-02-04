@@ -264,7 +264,8 @@ public class ServerMain extends RemoteObject implements WorthServer, WorthServer
             throw new ProjectDontFoundException(PJTname);
 
         try {
-            usa.getNEI().notifyEventChat(pjt.getIP(), pjt.getPORT(), PJTname);
+            if(usa.getNEI() != null)
+                usa.getNEI().notifyEventChat(pjt.getIP(), pjt.getPORT(), PJTname);  //utente online
         } catch (RemoteException e) {
 
             e.printStackTrace();
